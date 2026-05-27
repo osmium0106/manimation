@@ -1,0 +1,21 @@
+version: "3.9"
+
+services:
+  manimations-studio:
+
+    image: manimations-studio:latest
+
+    container_name: manimations-studio
+
+    restart: unless-stopped
+
+    ports:
+      - "8000:80"
+
+    environment:
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      OPENAI_MODEL: ${OPENAI_MODEL}
+
+    volumes:
+      - ./projects:/projects
+      - ./media:/app/media
