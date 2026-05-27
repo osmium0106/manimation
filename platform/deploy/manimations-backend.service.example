@@ -1,0 +1,35 @@
+# Manimations Studio backend — systemd unit
+# Install:
+#   sudo cp manimations-backend.service.example /etc/systemd/system/manimations-backend.service
+#   sudo systemctl daemon-reload
+#   sudo systemctl enable --now manimations-backend
+#
+# Adjust User= and paths if your deploy user or clone dir differs.
+
+[Unit]
+Description=Manimations Studio FastAPI backend
+After=network.target
+
+[Service]
+Type=simple
+User=manim
+Group=manim
+WorkingDirectory=/home/manim/manimations/platform/backend
+
+Environment=PYTHONUNBUFFERED=1
+EnvironmentFile=-/home/manim/manimations/platform/.env
+
+# Production: no reload, listen on localhost (Nginx proxies public traffic)
+ExecStart=/home/manim/manimations/platform/backend/.venv/bin/uvicorn app.main:app \
+  --host 127.0.0.1 \
+  --port 8000 \
+  --workers 1
+
+Restart=on-failure
+RestartSec=5
+
+# Manim subprocess renders can be memory-heavy
+LimitNOFILE=65536
+
+[Install]
+WantedBy=multi-user.target

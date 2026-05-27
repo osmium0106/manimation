@@ -27,6 +27,12 @@ Local-first platform: describe beats in chat → OpenAI structures them → visu
 
 Or run both: `./platform/start.sh`
 
+## Deploy to DigitalOcean
+
+See **[platform/DEPLOY-DIGITALOCEAN.md](DEPLOY-DIGITALOCEAN.md)** for step-by-step VPS deployment (Nginx + systemd + Manim + HTTPS).
+
+Example configs: `platform/deploy/nginx.conf.example`, `platform/deploy/manimations-backend.service.example`
+
 ## Architecture
 
 ```
