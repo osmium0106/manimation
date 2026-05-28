@@ -3,12 +3,14 @@
 from __future__ import annotations
 
 import re
+from pathlib import Path
 
 from manim import *
 from manim.utils.rate_functions import smooth
 from manim.utils import rate_functions
 
-BG_PATH = "/Users/enfec/manimations/background/orange_theme_BG.png"
+MANIM_ROOT = Path(__file__).resolve().parent.parent
+BG_PATH = str(MANIM_ROOT / "background" / "orange_theme_BG.png")
 LABEL_TOP_BUFF = 0.9
 LABEL_CONTENT_GAP = 0.25
 PANEL_FRAME_WIDTH = 7.5

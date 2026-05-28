@@ -3,13 +3,16 @@
 from __future__ import annotations
 
 import json
+import os
 import shutil
 import uuid
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-DEFAULT_DATA_DIR = Path.home() / "manimations-studio"
+DEFAULT_DATA_DIR = Path(
+    os.environ.get("MANIMATIONS_DATA_DIR", Path.home() / "manimations-studio")
+)
 
 
 def _now_iso() -> str:

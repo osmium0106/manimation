@@ -10,7 +10,21 @@ import sys
 from pathlib import Path
 
 MANIM_ROOT = Path(__file__).resolve().parents[3]
-MANIM_PYTHON = MANIM_ROOT / ".venv" / "bin" / "python"
+
+
+def _manim_python() -> str:
+    """Resolve Manim interpreter: Docker /opt/venv, local .venv, or PATH."""
+    for candidate in (
+        os.environ.get("MANIM_PYTHON"),
+        MANIM_ROOT / ".venv" / "bin" / "python",
+        Path("/opt/venv/bin/python"),
+    ):
+        if not candidate:
+            continue
+        path = Path(candidate)
+        if path.is_file():
+            return str(path)
+    return shutil.which("python") or sys.executable
 
 
 def detect_scene_class_from_file(scene_file: Path) -> str:
@@ -41,13 +55,12 @@ def render_scene(
         if output_mp4.exists():
             output_mp4.unlink()
 
-    python = str(MANIM_PYTHON) if MANIM_PYTHON.exists() else sys.executable
+    python = _manim_python()
     cmd = [
         python,
         "-m",
         "manim",
         "render",
-        "--flush_cache",
         quality,
         str(scene_file),
         scene_class,
@@ -64,7 +77,8 @@ def render_scene(
         timeout=900 if quality == "-qh" else 300,
     )
     if result.returncode != 0:
-        raise RuntimeError(f"Manim render failed:\n{result.stderr[-3000:]}")
+        tail = (result.stderr or result.stdout or "")[-4000:]
+        raise RuntimeError(f"Manim render failed:\n{tail}")
 
     # Find latest mp4 under media/videos for this scene
     media = MANIM_ROOT / "media" / "videos"
