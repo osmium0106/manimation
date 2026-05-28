@@ -88,6 +88,26 @@ export interface RenderStatusResponse {
   finished_at?: string;
 }
 
+export interface ExportResponse {
+  status?: string;
+  download_url: string | null;
+  quality: string;
+  progress?: number;
+  phase?: string | null;
+  error?: string | null;
+}
+
+export interface ExportStatusResponse {
+  status: "idle" | "rendering" | "done" | "error";
+  download_url: string | null;
+  quality: string;
+  progress: number;
+  phase?: string | null;
+  error?: string | null;
+  started_at?: string;
+  finished_at?: string;
+}
+
 const API = "/api";
 
 const RENDER_POLL_MS = 2000;
@@ -192,21 +212,61 @@ export async function submitScript(
   });
 }
 
+export async function getExportStatus(projectId: string) {
+  return json<ExportStatusResponse>(`${API}/projects/${projectId}/export-status`);
+}
+
+async function waitForExportRender(
+  projectId: string,
+  onProgress?: (progress: number, phase?: string | null) => void
+): Promise<ExportResponse> {
+  const deadline = Date.now() + RENDER_POLL_MAX_MS;
+  while (Date.now() < deadline) {
+    await sleep(RENDER_POLL_MS);
+    const status = await getExportStatus(projectId);
+    onProgress?.(status.progress ?? 0, status.phase);
+    if (status.status === "done" && status.download_url) {
+      return {
+        status: "done",
+        download_url: status.download_url,
+        quality: status.quality,
+        progress: 100,
+        phase: status.phase,
+      };
+    }
+    if (status.status === "error") {
+      throw new Error(status.error || "1080p export failed");
+    }
+  }
+  throw new Error("1080p export timed out waiting for render");
+}
+
 export async function exportHd(
   projectId: string,
-  options?: { code?: string; fromBeats?: boolean }
+  options?: { code?: string; fromBeats?: boolean },
+  onProgress?: (progress: number, phase?: string | null) => void
 ) {
-  return json<{ download_url: string; quality: string }>(
-    `${API}/projects/${projectId}/export`,
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        code: options?.code,
-        from_beats: options?.fromBeats ?? false,
-      }),
-    }
-  );
+  onProgress?.(0, "Starting export");
+  const started = await json<ExportResponse>(`${API}/projects/${projectId}/export`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      code: options?.code,
+      from_beats: options?.fromBeats ?? false,
+    }),
+  });
+
+  if (started.download_url) {
+    onProgress?.(100, "Complete");
+    return started;
+  }
+  if (started.status === "rendering" || started.status === "idle") {
+    return waitForExportRender(projectId, onProgress);
+  }
+  if (started.error) {
+    throw new Error(started.error);
+  }
+  return started;
 }
 
 export function downloadUrl(projectId: string) {

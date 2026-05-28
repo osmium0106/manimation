@@ -73,6 +73,8 @@ export default function App() {
   const [loading, setLoading] = useState(false);
   const [rendering, setRendering] = useState(false);
   const [exporting, setExporting] = useState(false);
+  const [exportProgress, setExportProgress] = useState(0);
+  const [exportPhase, setExportPhase] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [apiOk, setApiOk] = useState<boolean | null>(null);
   const [snapshots, setSnapshots] = useState<Snapshot[]>([]);
@@ -401,14 +403,20 @@ export default function App() {
   const handleDownloadHd = async () => {
     if (!project) return;
     setExporting(true);
+    setExportProgress(0);
+    setExportPhase("Starting export");
     setError(null);
     try {
       const exportOpts =
         previewView === "code" || codeCustomized
           ? { code: code.trim() || undefined }
           : { fromBeats: true };
-      await exportHd(project.id, exportOpts);
+      await exportHd(project.id, exportOpts, (progress, phase) => {
+        setExportProgress(progress);
+        setExportPhase(phase ?? null);
+      });
       setHdReady(true);
+      setExportProgress(100);
       const a = document.createElement("a");
       a.href = downloadUrl(project.id);
       a.download = `${project.name.replace(/\s+/g, "_")}_1080p60.mp4`;
@@ -419,6 +427,7 @@ export default function App() {
       setError(String(e));
     } finally {
       setExporting(false);
+      setExportPhase(null);
     }
   };
 
@@ -659,7 +668,9 @@ export default function App() {
                   ) : (
                     <Download size={14} />
                   )}
-                  {exporting ? "Exporting…" : "1080p60"}
+                  {exporting
+                    ? `${exportProgress}%`
+                    : "1080p60"}
                 </button>
                 {hdReady && !exporting && (
                   <a
@@ -730,10 +741,25 @@ export default function App() {
                     <p>Your animation preview will appear here</p>
                   </div>
                 )}
-                {(rendering || (loading && !hasPreview)) && (
+                {(rendering || (loading && !hasPreview)) && !exporting && (
                   <div className="preview-empty">
                     <Loader2 size={40} className="spin" />
-                    <p>{exporting ? "Exporting 1080p60…" : "Rendering with Manim…"}</p>
+                    <p>Rendering with Manim…</p>
+                  </div>
+                )}
+                {exporting && (
+                  <div className="preview-empty export-progress-wrap">
+                    <Loader2 size={40} className="spin" />
+                    <p>Exporting 1080p60…</p>
+                    <div className="export-progress-bar" aria-hidden="true">
+                      <div
+                        className="export-progress-fill"
+                        style={{ width: `${exportProgress}%` }}
+                      />
+                    </div>
+                    <p className="export-progress-label">
+                      {exportProgress}% — {exportPhase || "Rendering"}
+                    </p>
                   </div>
                 )}
                 {project && hasPreview && !exporting && !rendering && !loading && (

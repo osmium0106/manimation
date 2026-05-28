@@ -24,7 +24,7 @@ load_dotenv(MANIM_ROOT / ".env")
 from app.beat_compiler import compile_scene, generate_scene_code, patch_scene_code, starter_scene_code  # noqa: E402
 from app.openai_service import OpenAIService  # noqa: E402
 from app.project_store import ProjectStore  # noqa: E402
-from app.render_jobs import read_status, start_preview_render  # noqa: E402
+from app.render_jobs import read_status, start_render_job  # noqa: E402
 from app.renderer import render_scene  # noqa: E402
 from app.script_parser import parse_script  # noqa: E402
 
@@ -78,6 +78,7 @@ def _render_project(
     *,
     quality: str = "-ql",
     skip_compile: bool = False,
+    progress_callback=None,
 ) -> Path:
     scene_path = store.scene_path(project_id)
     if skip_compile and scene_path.exists():
@@ -94,7 +95,12 @@ def _render_project(
         mp4 = store.export_path(project_id)
     else:
         mp4 = store.render_path(project_id)
-    render_scene(scene_path, output_mp4=mp4, quality=quality)
+    render_scene(
+        scene_path,
+        output_mp4=mp4,
+        quality=quality,
+        progress_callback=progress_callback,
+    )
     return mp4
 
 
@@ -138,10 +144,10 @@ def _prepare_render(
 def _kickoff_preview_render(project_id: str, project: dict, *, skip_compile: bool) -> dict:
     renders_dir = store.render_path(project_id).parent
 
-    def _run() -> None:
+    def _run(_progress_cb=None) -> None:
         _render_project(project_id, project, quality="-ql", skip_compile=skip_compile)
 
-    status = start_preview_render(project_id, renders_dir, _run)
+    status = start_render_job(project_id, "preview", renders_dir, _run)
     preview_url = (
         f"/api/projects/{project_id}/preview"
         if status.get("status") == "done"
@@ -152,6 +158,40 @@ def _kickoff_preview_render(project_id: str, project: dict, *, skip_compile: boo
         "preview_url": preview_url,
         "render_error": status.get("error"),
         "code_customized": project.get("code_customized", False),
+    }
+
+
+def _kickoff_export_render(project_id: str, project: dict, *, skip_compile: bool) -> dict:
+    renders_dir = store.render_path(project_id).parent
+
+    def _run(progress_cb) -> None:
+        _render_project(
+            project_id,
+            project,
+            quality="-qh",
+            skip_compile=skip_compile,
+            progress_callback=progress_cb,
+        )
+
+    status = start_render_job(
+        project_id,
+        "export",
+        renders_dir,
+        _run,
+        track_progress=True,
+    )
+    download_url = (
+        f"/api/projects/{project_id}/download"
+        if status.get("status") == "done"
+        else None
+    )
+    return {
+        "status": status.get("status", "rendering"),
+        "download_url": download_url,
+        "quality": "1080p60",
+        "progress": status.get("progress", 0),
+        "phase": status.get("phase"),
+        "error": status.get("error"),
     }
 
 
@@ -413,7 +453,7 @@ def render_status(project_id: str):
         raise HTTPException(status_code=404, detail=str(exc)) from exc
 
     renders_dir = store.render_path(project_id).parent
-    status = read_status(renders_dir)
+    status = read_status(renders_dir, "preview")
     payload = {
         "status": status.get("status", "idle"),
         "error": status.get("error"),
@@ -528,7 +568,7 @@ def lint_python(body: PythonToolRequest):
 
 @app.post("/api/projects/{project_id}/export")
 def export_project(project_id: str, body: RenderRequest | None = None):
-    """Render 1080p60 and prepare HD download."""
+    """Render 1080p60 in the background and prepare HD download."""
     try:
         project = store.load_project(project_id)
     except FileNotFoundError as exc:
@@ -539,39 +579,32 @@ def export_project(project_id: str, body: RenderRequest | None = None):
     if not project.get("beats") and not scene_path.exists() and body.code is None:
         raise HTTPException(status_code=400, detail="No beats or scene code to export.")
 
-    if body.code is not None:
-        if "class " not in body.code or "construct" not in body.code:
-            raise HTTPException(
-                status_code=400,
-                detail="Code must define a Scene class with a construct() method.",
-            )
-        _write_scene_code(project_id, body.code)
-        project["code_customized"] = True
-        store.save_project(project, snapshot=False)
-        skip = True
-    elif body.from_beats:
-        if not project.get("beats"):
-            raise HTTPException(status_code=400, detail="No beats to compile.")
-        project = _resolve_and_prefetch(project)
-        compile_scene(project, scene_path)
-        project["code_customized"] = False
-        store.save_project(project, snapshot=False)
-        skip = True
-    else:
-        skip = project.get("code_customized", False)
-        if not skip and project.get("beats"):
-            project = _resolve_and_prefetch(project)
-            store.save_project(project, snapshot=False)
+    project, skip = _prepare_render(project_id, project, body)
+    return _kickoff_export_render(project_id, project, skip_compile=skip)
 
+
+@app.get("/api/projects/{project_id}/export-status")
+def export_status(project_id: str):
     try:
-        _render_project(project_id, project, quality="-qh", skip_compile=skip)
-    except Exception as exc:
-        raise HTTPException(status_code=500, detail=str(exc)) from exc
+        store.load_project(project_id)
+    except FileNotFoundError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
 
-    return {
-        "download_url": f"/api/projects/{project_id}/download",
+    renders_dir = store.render_path(project_id).parent
+    status = read_status(renders_dir, "export")
+    payload = {
+        "status": status.get("status", "idle"),
+        "error": status.get("error"),
+        "started_at": status.get("started_at"),
+        "finished_at": status.get("finished_at"),
+        "progress": status.get("progress", 0),
+        "phase": status.get("phase"),
+        "download_url": None,
         "quality": "1080p60",
     }
+    if status.get("status") == "done" and store.export_path(project_id).exists():
+        payload["download_url"] = f"/api/projects/{project_id}/download"
+    return payload
 
 
 @app.get("/api/projects/{project_id}/preview")
