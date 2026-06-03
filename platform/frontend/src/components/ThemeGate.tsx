@@ -6,9 +6,10 @@ import { ThemePicker } from "./ThemePicker";
 
 interface ThemeGateProps {
   onReady: (projectId: string) => void;
+  onBack?: () => void;
 }
 
-export function ThemeGate({ onReady }: ThemeGateProps) {
+export function ThemeGate({ onReady, onBack }: ThemeGateProps) {
   const [themes, setThemes] = useState<ThemeSummary[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>("builtin_orange");
   const [projectName, setProjectName] = useState("My Animation");
@@ -64,6 +65,11 @@ export function ThemeGate({ onReady }: ThemeGateProps) {
         <div className="theme-gate-brand">
           <Film size={28} />
           <h1>Manimations Studio</h1>
+          {onBack && (
+            <button type="button" className="btn-ghost sm theme-gate-back" onClick={onBack}>
+              ← All projects
+            </button>
+          )}
         </div>
         <p className="theme-gate-lead">
           Choose a visual theme for your video — background, typography, and colors. You can

@@ -30,21 +30,31 @@ class ProjectStore:
 
     def list_projects(self) -> list[dict]:
         out = []
-        for d in sorted(self.projects_dir.iterdir()):
+        for d in sorted(self.projects_dir.iterdir(), key=lambda p: p.stat().st_mtime, reverse=True):
             if not d.is_dir():
                 continue
             meta_path = d / "project.json"
             if meta_path.exists():
                 meta = json.loads(meta_path.read_text())
+                preview = d / "renders" / "latest.mp4"
                 out.append(
                     {
                         "id": d.name,
                         "name": meta.get("name", d.name),
                         "updated_at": meta.get("updated_at"),
+                        "created_at": meta.get("created_at"),
                         "beat_count": len(meta.get("beats", [])),
+                        "theme_id": meta.get("theme_id", "builtin_orange"),
+                        "has_preview": preview.exists(),
                     }
                 )
         return out
+
+    def delete_project(self, project_id: str) -> None:
+        pdir = self._project_dir(project_id)
+        if not pdir.exists():
+            raise FileNotFoundError(f"Project not found: {project_id}")
+        shutil.rmtree(pdir)
 
     def create_project(self, name: str = "Untitled", *, theme_id: str = "builtin_orange") -> dict:
         project_id = str(uuid.uuid4())[:8]

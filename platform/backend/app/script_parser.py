@@ -340,6 +340,8 @@ def _parse_beat_block(block: str) -> dict[str, Any]:
         (r"^LAYOUT:\s*(.+)$", "layout"),
         (r"^ICON GRID:\s*(.+)$", "icon_grid"),
         (r"^ICON REVEAL:\s*(.+)$", "icon_reveal"),
+        (r"^ICON ENTRANCE:\s*(.+)$", "icon_entrance"),
+        (r"^CONTINUE:\s*(.+)$", "_continue"),
         (r"^DURATION:\s*(.+)$", "duration"),
         (r"^HOLD:\s*([\d.]+)", "hold"),
         (r"^CAMERA:\s*(.+)$", "camera_mode"),
@@ -351,6 +353,8 @@ def _parse_beat_block(block: str) -> dict[str, Any]:
                 beat[field] = float(re.sub(r"[^\d.]", "", val) or "1.2")
             elif field == "camera_mode":
                 beat["use_camera"] = val.lower() in ("moving", "yes", "true", "on")
+            elif field == "_continue":
+                beat["continue_beat"] = val.lower() in ("yes", "true", "on", "1")
             elif field == "type":
                 beat[field] = val.strip()
             else:

@@ -3,6 +3,18 @@ export interface ChatMessage {
   content: string;
 }
 
+export interface BeatEmphasis {
+  word: string;
+  color: string;
+  animation: string;
+}
+
+export interface BeatCameraStep {
+  hook: string;
+  action: string;
+  run_time?: number;
+}
+
 export interface Beat {
   label: string;
   type: string;
@@ -14,6 +26,34 @@ export interface Beat {
   code_output?: string;
   code_result?: string;
   list_lines?: string[];
+  left_lines?: string[];
+  right_lines?: string[];
+  hold?: number;
+  icon_entrance?: string;
+  continue_beat?: boolean;
+  use_camera?: boolean;
+  emphasis?: BeatEmphasis[];
+  camera?: BeatCameraStep[];
+  visuals?: Record<string, unknown>;
+  visuals_resolved?: Record<string, unknown>;
+}
+
+export interface ProjectSummary {
+  id: string;
+  name: string;
+  updated_at?: string;
+  created_at?: string;
+  beat_count: number;
+  theme_id?: string;
+  has_preview?: boolean;
+}
+
+export interface BeatValidation {
+  valid: boolean;
+  issue_count: number;
+  warning_count: number;
+  issues: { beat_index: number; label: string; code: string; message: string }[];
+  warnings: { beat_index: number; label: string; code: string; message: string }[];
 }
 
 export interface BeatTypeRegion {
@@ -34,6 +74,7 @@ export interface BeatTypeMeta {
   visuals: string[];
   regions: BeatTypeRegion[];
   script_template: string;
+  camera_defaults?: BeatCameraStep[];
 }
 
 export interface Project {
@@ -41,6 +82,8 @@ export interface Project {
   name: string;
   theme_id?: string;
   style_pack: string;
+  style_brief?: string;
+  pacing?: string;
   use_camera: boolean;
   beats: Beat[];
   chat: ChatMessage[];
@@ -122,14 +165,18 @@ export interface RenderResponse {
   preview_url: string | null;
   code_customized?: boolean;
   render_error?: string | null;
+  progress?: number;
+  phase?: string | null;
 }
 
 export interface RenderStatusResponse {
-  status: "idle" | "rendering" | "done" | "error";
+  status: "idle" | "rendering" | "done" | "error" | "cancelled";
   preview_url: string | null;
   error?: string | null;
   started_at?: string;
   finished_at?: string;
+  progress?: number;
+  phase?: string | null;
 }
 
 export interface ExportResponse {
@@ -154,7 +201,7 @@ export interface ExportStatusResponse {
 
 const API = "/api";
 
-const RENDER_POLL_MS = 2000;
+const RENDER_POLL_MS = 400;
 const RENDER_POLL_MAX_MS = 600_000;
 
 function sleep(ms: number) {
@@ -188,9 +235,17 @@ export async function createProject(name = "Untitled", themeId = "builtin_orange
   });
 }
 
+export async function listProjects() {
+  return json<{ projects: ProjectSummary[] }>(`${API}/projects`);
+}
+
+export async function deleteProject(projectId: string) {
+  return json<{ message: string }>(`${API}/projects/${projectId}`, { method: "DELETE" });
+}
+
 export async function patchProject(
   projectId: string,
-  body: { theme_id?: string; name?: string }
+  body: { theme_id?: string; name?: string; style_brief?: string; pacing?: string; use_camera?: boolean }
 ) {
   return json<Project>(`${API}/projects/${projectId}`, {
     method: "PATCH",
@@ -250,26 +305,38 @@ export async function getRenderStatus(projectId: string) {
   return json<RenderStatusResponse>(`${API}/projects/${projectId}/render-status`);
 }
 
-async function waitForPreviewRender(projectId: string): Promise<RenderResponse> {
-  const deadline = Date.now() + RENDER_POLL_MAX_MS;
+async function* pollRenderStatus(
+  fetchStatus: () => Promise<{ status: string; progress?: number; phase?: string | null; preview_url?: string | null; download_url?: string | null; error?: string | null; quality?: string }>,
+  onProgress?: (progress: number, phase?: string | null) => void,
+  deadlineMs = RENDER_POLL_MAX_MS
+) {
+  const deadline = Date.now() + deadlineMs;
   while (Date.now() < deadline) {
+    const status = await fetchStatus();
+    onProgress?.(status.progress ?? 0, status.phase);
+    yield status;
+    if (status.status === "done" || status.status === "error" || status.status === "cancelled") {
+      return;
+    }
     await sleep(RENDER_POLL_MS);
-    const status = await getRenderStatus(projectId);
-    if (status.status === "done" && status.preview_url) {
-      return { status: "done", preview_url: status.preview_url };
-    }
-    if (status.status === "error") {
-      throw new Error(status.error || "Manim render failed");
-    }
   }
-  throw new Error("Render timed out waiting for preview");
+  throw new Error("Render timed out");
+}
+
+export async function cancelPreviewRender(projectId: string) {
+  return json<RenderStatusResponse>(`${API}/projects/${projectId}/render/cancel`, {
+    method: "POST",
+  });
 }
 
 export async function renderProject(
   projectId: string,
-  options?: { code?: string; fromBeats?: boolean }
-) {
-  const started = await json<RenderResponse>(`${API}/projects/${projectId}/render`, {
+  options?: { code?: string; fromBeats?: boolean },
+  onProgress?: (progress: number, phase?: string | null) => void
+): Promise<RenderResponse> {
+  onProgress?.(0, "Preparing");
+
+  const postPromise = json<RenderResponse>(`${API}/projects/${projectId}/render`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -278,16 +345,69 @@ export async function renderProject(
     }),
   });
 
-  if (started.preview_url) {
-    return started;
+  const deadline = Date.now() + RENDER_POLL_MAX_MS;
+  while (Date.now() < deadline) {
+    try {
+      const status = await getRenderStatus(projectId);
+      onProgress?.(status.progress ?? 0, status.phase ?? null);
+
+      if (status.status === "done" && status.preview_url) {
+        return { status: "done", preview_url: status.preview_url };
+      }
+      if (status.status === "error") {
+        throw new Error(status.error || "Manim render failed");
+      }
+      if (status.status === "cancelled") {
+        throw new Error("Render cancelled");
+      }
+    } catch (err) {
+      if (err instanceof Error && err.message.includes("Manim render failed")) {
+        throw err;
+      }
+      if (err instanceof Error && err.message.includes("Render cancelled")) {
+        throw err;
+      }
+    }
+
+    const postOutcome = await Promise.race([
+      postPromise.then(
+        (res) => ({ ok: true as const, res }),
+        (err: unknown) => ({
+          ok: false as const,
+          err: err instanceof Error ? err : new Error(String(err)),
+        })
+      ),
+      sleep(0).then(() => null),
+    ]);
+
+    if (postOutcome?.ok === false) {
+      throw postOutcome.err;
+    }
+    if (postOutcome?.ok === true && postOutcome.res.preview_url) {
+      onProgress?.(100, "Complete");
+      return postOutcome.res;
+    }
+    if (postOutcome?.ok === true && postOutcome.res.render_error) {
+      throw new Error(postOutcome.res.render_error);
+    }
+
+    await sleep(RENDER_POLL_MS);
   }
-  if (started.status === "rendering" || started.status === "idle") {
-    return waitForPreviewRender(projectId);
+
+  try {
+    const started = await postPromise;
+    if (started.preview_url) {
+      onProgress?.(100, "Complete");
+      return started;
+    }
+    if (started.render_error) {
+      throw new Error(started.render_error);
+    }
+  } catch (err) {
+    throw err instanceof Error ? err : new Error(String(err));
   }
-  if (started.render_error) {
-    throw new Error(started.render_error);
-  }
-  return started;
+
+  throw new Error("Render timed out waiting for preview");
 }
 
 export async function submitScript(
@@ -310,16 +430,16 @@ async function waitForExportRender(
   projectId: string,
   onProgress?: (progress: number, phase?: string | null) => void
 ): Promise<ExportResponse> {
-  const deadline = Date.now() + RENDER_POLL_MAX_MS;
-  while (Date.now() < deadline) {
-    await sleep(RENDER_POLL_MS);
-    const status = await getExportStatus(projectId);
-    onProgress?.(status.progress ?? 0, status.phase);
+  onProgress?.(0, "Starting export");
+  for await (const status of pollRenderStatus(
+    () => getExportStatus(projectId),
+    onProgress
+  )) {
     if (status.status === "done" && status.download_url) {
       return {
         status: "done",
         download_url: status.download_url,
-        quality: status.quality,
+        quality: (status as ExportStatusResponse).quality,
         progress: 100,
         phase: status.phase,
       };
@@ -373,6 +493,51 @@ export async function getBeatScriptTemplate() {
 
 export function beatScriptTemplateDownloadUrl() {
   return `${API}/beat-script-template/download`;
+}
+
+export async function getStudioGuide() {
+  return json<{ filename: string; content: string }>(`${API}/studio-guide`);
+}
+
+export function studioGuideDownloadUrl() {
+  return `${API}/studio-guide/download`;
+}
+
+export interface DocsPageMeta {
+  slug: string;
+  title: string;
+  description?: string;
+  file: string;
+}
+
+export interface DocsSection {
+  title: string;
+  pages: DocsPageMeta[];
+}
+
+export interface DocsManifest {
+  title: string;
+  subtitle?: string;
+  author: string;
+  version: string;
+  sections: DocsSection[];
+}
+
+export interface DocsPageResponse {
+  slug: string;
+  title: string;
+  description?: string;
+  content: string;
+  prev: { slug: string; title: string } | null;
+  next: { slug: string; title: string } | null;
+}
+
+export async function getDocsManifest() {
+  return json<DocsManifest>(`${API}/docs`);
+}
+
+export async function getDocsPage(slug: string) {
+  return json<DocsPageResponse>(`${API}/docs/pages/${encodeURIComponent(slug)}`);
 }
 
 export async function getProjectCode(projectId: string) {
@@ -441,4 +606,51 @@ export async function lintPython(code: string) {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ code }),
   });
+}
+
+export async function updateProjectBeats(projectId: string, beats: Beat[], useCamera?: boolean) {
+  return json<Project>(`${API}/projects/${projectId}/beats`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ beats, use_camera: useCamera }),
+  });
+}
+
+export async function getProjectScript(projectId: string) {
+  return json<{ script: string }>(`${API}/projects/${projectId}/script`);
+}
+
+export async function validateBeats(projectId: string) {
+  return json<BeatValidation>(`${API}/projects/${projectId}/validate-beats`, {
+    method: "POST",
+  });
+}
+
+export async function getVisualCatalog() {
+  return json<Record<string, unknown>>(`${API}/visual-catalog`);
+}
+
+export async function searchIcons(query: string, limit = 24) {
+  return json<{ icons: { ref: string; prefix?: string }[] }>(
+    `${API}/icons/search?q=${encodeURIComponent(query)}&limit=${limit}`
+  );
+}
+
+export async function uploadProjectIcon(projectId: string, file: File) {
+  const form = new FormData();
+  form.append("file", file);
+  const res = await fetch(`${API}/projects/${projectId}/icons/upload`, {
+    method: "POST",
+    body: form,
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: res.statusText }));
+    throw new Error(err.detail || "Upload failed");
+  }
+  return res.json() as Promise<{ ref: string; kind: string; filename: string }>;
+}
+
+export function projectIconUrl(projectId: string, filename: string) {
+  const name = filename.replace(/^icons\//, "");
+  return `${API}/projects/${projectId}/icons/${encodeURIComponent(name)}`;
 }

@@ -4,10 +4,13 @@ from __future__ import annotations
 
 import json
 import re
+import sys
 from pathlib import Path
 from typing import Any
 
 ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(ROOT / "animations"))
+from icon_library import is_colorful_iconify_ref  # noqa: E402
 CATALOG_PATH = ROOT / "assets" / "visual_catalog.json"
 STYLE_PACKS_DIR = ROOT / "assets" / "style_packs"
 
@@ -257,6 +260,56 @@ def _infer_kind_from_ref(ref: str, icon_id: str = "") -> str:
     return "iconify"
 
 
+def _catalog_candidate_for_slot(concept: str, slot: dict, style_pack: dict) -> dict:
+    """Pick catalog asset; prefer iconify when the user chose a custom tint."""
+    entry = load_catalog().get(concept) or {}
+    candidates = entry.get("candidates") or []
+    slot_color = slot.get("color")
+    user_tint = bool(
+        slot_color
+        and isinstance(slot_color, str)
+        and slot_color.upper() not in ("ORIGINAL", "PRESERVE")
+    )
+    if user_tint:
+        for candidate in candidates:
+            if candidate.get("kind") == "iconify" and candidate.get("ref"):
+                return dict(candidate)
+    return _pick_candidate(entry, style_pack)
+
+
+def _resolve_slot_color(
+    color: str | None,
+    *,
+    kind: str,
+    ref: str,
+    style_pack: dict,
+) -> str | None:
+    if isinstance(color, str) and color.upper() in ("ORIGINAL", "PRESERVE"):
+        return None
+    if color is not None:
+        return color
+    if kind == "iconify":
+        if ref and is_colorful_iconify_ref(ref):
+            return None
+        return style_pack.get("default_icon_color", "#FFFFFF")
+    if kind == "brand":
+        return None
+    return color
+
+
+def _apply_slot_overrides(spec: dict, slot: dict) -> dict:
+    spec = dict(spec)
+    if slot.get("color") is not None:
+        color = slot["color"]
+        if isinstance(color, str) and color.upper() in ("ORIGINAL", "PRESERVE"):
+            spec["color"] = None
+        else:
+            spec["color"] = color
+    if slot.get("scale") is not None:
+        spec["scale"] = float(slot["scale"])
+    return spec
+
+
 def resolve_visual_slot(
     slot: dict,
     *,
@@ -266,27 +319,45 @@ def resolve_visual_slot(
 ) -> dict:
     """Use explicit script ref/color when provided; otherwise fall back to catalog."""
     style_pack = load_style_pack(style_pack_id)
+    slot = dict(_as_dict(slot))
+
+    if not (slot.get("ref") or "").strip():
+        candidate = _catalog_candidate_for_slot(concept, slot, style_pack)
+        if candidate.get("ref"):
+            slot.setdefault("ref", candidate["ref"])
+            slot.setdefault("kind", candidate.get("kind", "iconify"))
+            slot.setdefault("scale", candidate.get("scale", 1.2))
+
     ref = (slot.get("ref") or "").strip()
-    if ref:
-        if ICONIFY_REF.match(ref):
-            kind = "iconify"
-        elif ref == "shape_question":
-            kind = "procedural"
-        else:
-            kind = slot.get("kind") or _infer_kind_from_ref(ref, slot.get("icon_id", ""))
-        color = slot.get("color")
-        if color is None and kind == "iconify":
-            color = style_pack.get("default_icon_color", "#FFFFFF")
-        return {
-            "concept": concept,
-            "role": role,
-            "kind": kind,
-            "ref": ref,
-            "scale": float(slot.get("scale", 1.2)),
-            "color": color,
-            **{k: slot[k] for k in ("trigger", "icon_id") if slot.get(k)},
-        }
-    return resolve_concept(concept, style_pack_id=style_pack_id, role=role)
+    if not ref:
+        spec = resolve_concept(concept, style_pack_id=style_pack_id, role=role)
+        return _apply_slot_overrides(spec, slot)
+
+    if slot.get("kind") == "project" or ref.startswith("icons/"):
+        kind = "project"
+    elif ICONIFY_REF.match(ref):
+        kind = "iconify"
+    elif ref == "shape_question":
+        kind = "procedural"
+    else:
+        kind = slot.get("kind") or _infer_kind_from_ref(ref, slot.get("icon_id", ""))
+
+    color = _resolve_slot_color(
+        slot.get("color"),
+        kind=kind,
+        ref=ref,
+        style_pack=style_pack,
+    )
+    spec = {
+        "concept": concept,
+        "role": role,
+        "kind": kind,
+        "ref": ref,
+        "scale": float(slot.get("scale", 1.2)),
+        "color": color,
+        **{k: slot[k] for k in ("trigger", "icon_id") if slot.get(k)},
+    }
+    return _apply_slot_overrides(spec, slot)
 
 
 def resolve_concept(
@@ -300,8 +371,14 @@ def resolve_concept(
     entry = catalog.get(concept) or catalog.get(ROLE_DEFAULTS.get(role, "sparkles"), {})
     candidate = _pick_candidate(entry, style_pack)
     color = candidate.get("color")
+    ref = candidate.get("ref", "")
     if color is None and candidate.get("kind") == "iconify":
-        color = style_pack.get("default_icon_color", "#FFFFFF")
+        if ref and is_colorful_iconify_ref(ref):
+            color = None
+        else:
+            color = style_pack.get("default_icon_color", "#FFFFFF")
+    elif color is None and candidate.get("kind") == "brand":
+        color = None
     return {
         "concept": concept,
         "role": role,

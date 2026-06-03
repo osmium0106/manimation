@@ -1,83 +1,1109 @@
 {
   "python": {
-    "tags": ["programming", "language", "brand", "subject"],
-    "synonyms": ["python3", "py"],
+    "tags": [
+      "programming",
+      "language",
+      "brand",
+      "subject"
+    ],
+    "synonyms": [
+      "python3",
+      "py"
+    ],
     "candidates": [
-      {"kind": "brand", "ref": "assets/brands/python-logo.svg", "scale": 1.2, "color": null},
-      {"kind": "iconify", "ref": "devicon:python", "scale": 1.2, "color": null},
-      {"kind": "iconify", "ref": "fa6-brands:python", "scale": 1.2, "color": null}
+      {
+        "kind": "brand",
+        "ref": "assets/brands/python-logo.svg",
+        "scale": 1.2,
+        "color": null
+      },
+      {
+        "kind": "iconify",
+        "ref": "devicon:python",
+        "scale": 1.2,
+        "color": null
+      },
+      {
+        "kind": "iconify",
+        "ref": "fa6-brands:python",
+        "scale": 1.2,
+        "color": null
+      }
     ]
   },
   "question": {
-    "tags": ["ask", "confused", "intro", "question"],
-    "synonyms": ["what", "why", "how", "help"],
+    "tags": [
+      "ask",
+      "confused",
+      "intro",
+      "question"
+    ],
+    "synonyms": [
+      "what",
+      "why",
+      "how",
+      "help"
+    ],
     "candidates": [
-      {"kind": "procedural", "ref": "shape_question", "scale": 1.0, "color": null},
-      {"kind": "iconify", "ref": "lucide:circle-help", "scale": 1.8, "color": "#FFFFFF"}
+      {
+        "kind": "procedural",
+        "ref": "shape_question",
+        "scale": 1.0,
+        "color": null
+      },
+      {
+        "kind": "iconify",
+        "ref": "lucide:circle-help",
+        "scale": 1.8,
+        "color": "#FFFFFF"
+      }
     ]
   },
   "terminal": {
-    "tags": ["code", "instructions", "command", "programming", "tool"],
-    "synonyms": ["shell", "cli", "console", "write", "instructions"],
+    "tags": [
+      "code",
+      "instructions",
+      "command",
+      "programming",
+      "tool"
+    ],
+    "synonyms": [
+      "shell",
+      "cli",
+      "console",
+      "write",
+      "instructions"
+    ],
     "candidates": [
-      {"kind": "iconify", "ref": "lucide:terminal", "scale": 1.2, "color": "#FFFFFF"},
-      {"kind": "iconify", "ref": "lucide:square-code", "scale": 1.2, "color": "#FFFFFF"}
+      {
+        "kind": "iconify",
+        "ref": "lucide:terminal",
+        "scale": 1.2,
+        "color": "#FFFFFF"
+      },
+      {
+        "kind": "iconify",
+        "ref": "lucide:square-code",
+        "scale": 1.2,
+        "color": "#FFFFFF"
+      }
     ]
   },
   "computer": {
-    "tags": ["device", "machine", "actor", "tool"],
-    "synonyms": ["laptop", "pc", "desktop", "computer"],
+    "tags": [
+      "device",
+      "machine",
+      "actor",
+      "tool"
+    ],
+    "synonyms": [
+      "laptop",
+      "pc",
+      "desktop",
+      "computer"
+    ],
     "candidates": [
-      {"kind": "iconify", "ref": "lucide:laptop", "scale": 1.2, "color": "#FFFFFF"},
-      {"kind": "iconify", "ref": "lucide:monitor", "scale": 1.2, "color": "#FFFFFF"}
+      {
+        "kind": "iconify",
+        "ref": "lucide:laptop",
+        "scale": 1.2,
+        "color": "#FFFFFF"
+      },
+      {
+        "kind": "iconify",
+        "ref": "lucide:monitor",
+        "scale": 1.2,
+        "color": "#FFFFFF"
+      }
     ]
   },
   "frustration": {
-    "tags": ["joke", "punchline", "error", "scream", "emotion"],
-    "synonyms": ["scream", "screaming", "angry", "frustrated", "panic"],
+    "tags": [
+      "joke",
+      "punchline",
+      "error",
+      "scream",
+      "emotion"
+    ],
+    "synonyms": [
+      "scream",
+      "screaming",
+      "angry",
+      "frustrated",
+      "panic"
+    ],
     "candidates": [
-      {"kind": "iconify", "ref": "lucide:volume-2", "scale": 1.2, "color": "#FFFFFF", "style_pack": "course_clean"},
-      {"kind": "iconify", "ref": "noto:face-screaming-in-fear", "scale": 1.2, "color": null, "style_pack": "playful"},
-      {"kind": "iconify", "ref": "twemoji:face-screaming-in-fear", "scale": 1.2, "color": null, "style_pack": "playful"}
+      {
+        "kind": "iconify",
+        "ref": "lucide:volume-2",
+        "scale": 1.2,
+        "color": "#FFFFFF",
+        "style_pack": "course_clean"
+      },
+      {
+        "kind": "iconify",
+        "ref": "noto:face-screaming-in-fear",
+        "scale": 1.2,
+        "color": null,
+        "style_pack": "playful"
+      },
+      {
+        "kind": "iconify",
+        "ref": "twemoji:face-screaming-in-fear",
+        "scale": 1.2,
+        "color": null,
+        "style_pack": "playful"
+      }
     ]
   },
   "success": {
-    "tags": ["done", "complete", "check", "positive"],
-    "synonyms": ["works", "success", "correct", "yes"],
+    "tags": [
+      "done",
+      "complete",
+      "check",
+      "positive"
+    ],
+    "synonyms": [
+      "works",
+      "success",
+      "correct",
+      "yes"
+    ],
     "candidates": [
-      {"kind": "iconify", "ref": "lucide:circle-check", "scale": 1.2, "color": "#FFFFFF"},
-      {"kind": "iconify", "ref": "lucide:check", "scale": 1.2, "color": "#FFFFFF"}
+      {
+        "kind": "iconify",
+        "ref": "lucide:circle-check",
+        "scale": 1.2,
+        "color": "#FFFFFF"
+      },
+      {
+        "kind": "iconify",
+        "ref": "lucide:check",
+        "scale": 1.2,
+        "color": "#FFFFFF"
+      }
     ]
   },
   "failure": {
-    "tags": ["joke", "punchline", "error", "usually"],
-    "synonyms": ["usually", "sometimes", "bug", "broken", "fail"],
+    "tags": [
+      "joke",
+      "punchline",
+      "error",
+      "usually"
+    ],
+    "synonyms": [
+      "usually",
+      "sometimes",
+      "bug",
+      "broken",
+      "fail"
+    ],
     "candidates": [
-      {"kind": "iconify", "ref": "lucide:bug", "scale": 1.2, "color": "#FFFFFF"},
-      {"kind": "iconify", "ref": "lucide:monitor-x", "scale": 1.2, "color": "#FFFFFF"}
+      {
+        "kind": "iconify",
+        "ref": "lucide:bug",
+        "scale": 1.2,
+        "color": "#FFFFFF"
+      },
+      {
+        "kind": "iconify",
+        "ref": "lucide:monitor-x",
+        "scale": 1.2,
+        "color": "#FFFFFF"
+      }
     ]
   },
   "ai": {
-    "tags": ["robot", "machine learning", "subject"],
-    "synonyms": ["artificial intelligence", "ml", "bot", "neural"],
+    "tags": [
+      "robot",
+      "machine learning",
+      "subject"
+    ],
+    "synonyms": [
+      "artificial intelligence",
+      "ml",
+      "bot",
+      "neural"
+    ],
     "candidates": [
-      {"kind": "iconify", "ref": "lucide:bot", "scale": 1.2, "color": "#FFFFFF"},
-      {"kind": "iconify", "ref": "lucide:brain", "scale": 1.2, "color": "#FFFFFF"}
+      {
+        "kind": "iconify",
+        "ref": "lucide:bot",
+        "scale": 1.2,
+        "color": "#FFFFFF"
+      },
+      {
+        "kind": "iconify",
+        "ref": "lucide:brain",
+        "scale": 1.2,
+        "color": "#FFFFFF"
+      }
     ]
   },
   "code": {
-    "tags": ["programming", "tool", "editor"],
-    "synonyms": ["coding", "developer", "software"],
+    "tags": [
+      "programming",
+      "tool",
+      "editor"
+    ],
+    "synonyms": [
+      "coding",
+      "developer",
+      "software"
+    ],
     "candidates": [
-      {"kind": "iconify", "ref": "lucide:square-code", "scale": 1.2, "color": "#FFFFFF"},
-      {"kind": "iconify", "ref": "lucide:code-2", "scale": 1.2, "color": "#FFFFFF"}
+      {
+        "kind": "iconify",
+        "ref": "lucide:square-code",
+        "scale": 1.2,
+        "color": "#FFFFFF"
+      },
+      {
+        "kind": "iconify",
+        "ref": "lucide:code-2",
+        "scale": 1.2,
+        "color": "#FFFFFF"
+      }
     ]
   },
   "sparkles": {
-    "tags": ["celebration", "intro", "subject", "default"],
-    "synonyms": ["welcome", "new", "start", "magic"],
+    "tags": [
+      "celebration",
+      "intro",
+      "subject",
+      "default"
+    ],
+    "synonyms": [
+      "welcome",
+      "new",
+      "start",
+      "magic"
+    ],
     "candidates": [
-      {"kind": "iconify", "ref": "lucide:sparkles", "scale": 1.2, "color": "#FFFFFF"}
+      {
+        "kind": "iconify",
+        "ref": "lucide:sparkles",
+        "scale": 1.2,
+        "color": "#FFFFFF"
+      }
+    ]
+  },
+  "database": {
+    "tags": [
+      "data",
+      "sql",
+      "storage"
+    ],
+    "synonyms": [
+      "db",
+      "postgres",
+      "mysql",
+      "data store"
+    ],
+    "candidates": [
+      {
+        "kind": "iconify",
+        "ref": "lucide:database",
+        "scale": 1.2,
+        "color": "#FFFFFF"
+      }
+    ]
+  },
+  "cloud": {
+    "tags": [
+      "internet",
+      "hosting",
+      "deploy"
+    ],
+    "synonyms": [
+      "aws",
+      "azure",
+      "gcp",
+      "serverless"
+    ],
+    "candidates": [
+      {
+        "kind": "iconify",
+        "ref": "lucide:cloud",
+        "scale": 1.2,
+        "color": "#FFFFFF"
+      }
+    ]
+  },
+  "web": {
+    "tags": [
+      "browser",
+      "website",
+      "frontend"
+    ],
+    "synonyms": [
+      "internet",
+      "html",
+      "site"
+    ],
+    "candidates": [
+      {
+        "kind": "iconify",
+        "ref": "lucide:globe",
+        "scale": 1.2,
+        "color": "#FFFFFF"
+      }
+    ]
+  },
+  "robot": {
+    "tags": [
+      "automation",
+      "bot",
+      "ai"
+    ],
+    "synonyms": [
+      "robotics",
+      "bot"
+    ],
+    "candidates": [
+      {
+        "kind": "iconify",
+        "ref": "lucide:bot",
+        "scale": 1.2,
+        "color": "#FFFFFF"
+      }
+    ]
+  },
+  "loop": {
+    "tags": [
+      "repeat",
+      "cycle",
+      "programming"
+    ],
+    "synonyms": [
+      "for loop",
+      "iteration",
+      "while"
+    ],
+    "candidates": [
+      {
+        "kind": "iconify",
+        "ref": "lucide:repeat",
+        "scale": 1.2,
+        "color": "#FFFFFF"
+      }
+    ]
+  },
+  "function": {
+    "tags": [
+      "code",
+      "programming",
+      "def"
+    ],
+    "synonyms": [
+      "method",
+      "callable",
+      "routine"
+    ],
+    "candidates": [
+      {
+        "kind": "iconify",
+        "ref": "lucide:function-square",
+        "scale": 1.2,
+        "color": "#FFFFFF"
+      }
+    ]
+  },
+  "variable": {
+    "tags": [
+      "code",
+      "data",
+      "storage"
+    ],
+    "synonyms": [
+      "var",
+      "let",
+      "assign"
+    ],
+    "candidates": [
+      {
+        "kind": "iconify",
+        "ref": "lucide:variable",
+        "scale": 1.2,
+        "color": "#FFFFFF"
+      }
+    ]
+  },
+  "bug": {
+    "tags": [
+      "error",
+      "debug",
+      "issue"
+    ],
+    "synonyms": [
+      "glitch",
+      "defect"
+    ],
+    "candidates": [
+      {
+        "kind": "iconify",
+        "ref": "lucide:bug",
+        "scale": 1.2,
+        "color": "#FFFFFF"
+      }
+    ]
+  },
+  "security": {
+    "tags": [
+      "lock",
+      "safe",
+      "auth"
+    ],
+    "synonyms": [
+      "secure",
+      "password",
+      "encrypt"
+    ],
+    "candidates": [
+      {
+        "kind": "iconify",
+        "ref": "lucide:lock",
+        "scale": 1.2,
+        "color": "#FFFFFF"
+      }
+    ]
+  },
+  "network": {
+    "tags": [
+      "connection",
+      "api",
+      "internet"
+    ],
+    "synonyms": [
+      "wifi",
+      "socket",
+      "http"
+    ],
+    "candidates": [
+      {
+        "kind": "iconify",
+        "ref": "lucide:network",
+        "scale": 1.2,
+        "color": "#FFFFFF"
+      }
+    ]
+  },
+  "api": {
+    "tags": [
+      "integration",
+      "endpoint",
+      "rest"
+    ],
+    "synonyms": [
+      "rest api",
+      "graphql",
+      "webhook"
+    ],
+    "candidates": [
+      {
+        "kind": "iconify",
+        "ref": "lucide:plug",
+        "scale": 1.2,
+        "color": "#FFFFFF"
+      }
+    ]
+  },
+  "data": {
+    "tags": [
+      "analytics",
+      "chart",
+      "numbers"
+    ],
+    "synonyms": [
+      "dataset",
+      "metrics",
+      "stats"
+    ],
+    "candidates": [
+      {
+        "kind": "iconify",
+        "ref": "lucide:bar-chart-3",
+        "scale": 1.2,
+        "color": "#FFFFFF"
+      }
+    ]
+  },
+  "math": {
+    "tags": [
+      "numbers",
+      "equation",
+      "algebra"
+    ],
+    "synonyms": [
+      "calculate",
+      "formula"
+    ],
+    "candidates": [
+      {
+        "kind": "iconify",
+        "ref": "lucide:sigma",
+        "scale": 1.2,
+        "color": "#FFFFFF"
+      }
+    ]
+  },
+  "book": {
+    "tags": [
+      "learn",
+      "education",
+      "read"
+    ],
+    "synonyms": [
+      "lesson",
+      "course",
+      "study"
+    ],
+    "candidates": [
+      {
+        "kind": "iconify",
+        "ref": "lucide:book-open",
+        "scale": 1.2,
+        "color": "#FFFFFF"
+      }
+    ]
+  },
+  "rocket": {
+    "tags": [
+      "launch",
+      "start",
+      "growth"
+    ],
+    "synonyms": [
+      "startup",
+      "deploy",
+      "ship"
+    ],
+    "candidates": [
+      {
+        "kind": "iconify",
+        "ref": "lucide:rocket",
+        "scale": 1.2,
+        "color": "#FFFFFF"
+      }
+    ]
+  },
+  "heart": {
+    "tags": [
+      "love",
+      "like",
+      "favorite"
+    ],
+    "synonyms": [
+      "enjoy",
+      "passion"
+    ],
+    "candidates": [
+      {
+        "kind": "iconify",
+        "ref": "lucide:heart",
+        "scale": 1.2,
+        "color": "#FFFFFF"
+      }
+    ]
+  },
+  "time": {
+    "tags": [
+      "clock",
+      "schedule",
+      "duration"
+    ],
+    "synonyms": [
+      "timer",
+      "deadline",
+      "wait"
+    ],
+    "candidates": [
+      {
+        "kind": "iconify",
+        "ref": "lucide:clock",
+        "scale": 1.2,
+        "color": "#FFFFFF"
+      }
+    ]
+  },
+  "money": {
+    "tags": [
+      "finance",
+      "cost",
+      "business"
+    ],
+    "synonyms": [
+      "dollar",
+      "payment",
+      "price"
+    ],
+    "candidates": [
+      {
+        "kind": "iconify",
+        "ref": "lucide:dollar-sign",
+        "scale": 1.2,
+        "color": "#FFFFFF"
+      }
+    ]
+  },
+  "team": {
+    "tags": [
+      "people",
+      "group",
+      "collaboration"
+    ],
+    "synonyms": [
+      "users",
+      "community"
+    ],
+    "candidates": [
+      {
+        "kind": "iconify",
+        "ref": "lucide:users",
+        "scale": 1.2,
+        "color": "#FFFFFF"
+      }
+    ]
+  },
+  "settings": {
+    "tags": [
+      "config",
+      "gear",
+      "preferences"
+    ],
+    "synonyms": [
+      "configure",
+      "options"
+    ],
+    "candidates": [
+      {
+        "kind": "iconify",
+        "ref": "lucide:settings",
+        "scale": 1.2,
+        "color": "#FFFFFF"
+      }
+    ]
+  },
+  "search": {
+    "tags": [
+      "find",
+      "lookup",
+      "explore"
+    ],
+    "synonyms": [
+      "query",
+      "discover"
+    ],
+    "candidates": [
+      {
+        "kind": "iconify",
+        "ref": "lucide:search",
+        "scale": 1.2,
+        "color": "#FFFFFF"
+      }
+    ]
+  },
+  "file": {
+    "tags": [
+      "document",
+      "save",
+      "project"
+    ],
+    "synonyms": [
+      "folder",
+      "path"
+    ],
+    "candidates": [
+      {
+        "kind": "iconify",
+        "ref": "lucide:file-code",
+        "scale": 1.2,
+        "color": "#FFFFFF"
+      }
+    ]
+  },
+  "git": {
+    "tags": [
+      "version",
+      "commit",
+      "github"
+    ],
+    "synonyms": [
+      "branch",
+      "merge",
+      "repo"
+    ],
+    "candidates": [
+      {
+        "kind": "iconify",
+        "ref": "lucide:git-branch",
+        "scale": 1.2,
+        "color": "#FFFFFF"
+      }
+    ]
+  },
+  "docker": {
+    "tags": [
+      "container",
+      "deploy",
+      "devops"
+    ],
+    "synonyms": [
+      "kubernetes",
+      "k8s"
+    ],
+    "candidates": [
+      {
+        "kind": "iconify",
+        "ref": "lucide:container",
+        "scale": 1.2,
+        "color": "#FFFFFF"
+      }
+    ]
+  },
+  "test": {
+    "tags": [
+      "qa",
+      "check",
+      "verify"
+    ],
+    "synonyms": [
+      "unit test",
+      "pytest",
+      "assert"
+    ],
+    "candidates": [
+      {
+        "kind": "iconify",
+        "ref": "lucide:flask-conical",
+        "scale": 1.2,
+        "color": "#FFFFFF"
+      }
+    ]
+  },
+  "list": {
+    "tags": [
+      "checklist",
+      "items",
+      "todo"
+    ],
+    "synonyms": [
+      "tasks",
+      "steps"
+    ],
+    "candidates": [
+      {
+        "kind": "iconify",
+        "ref": "lucide:list-checks",
+        "scale": 1.2,
+        "color": "#FFFFFF"
+      }
+    ]
+  },
+  "compare": {
+    "tags": [
+      "versus",
+      "diff",
+      "choice"
+    ],
+    "synonyms": [
+      "vs",
+      "before after"
+    ],
+    "candidates": [
+      {
+        "kind": "iconify",
+        "ref": "lucide:git-compare",
+        "scale": 1.2,
+        "color": "#FFFFFF"
+      }
+    ]
+  },
+  "warning": {
+    "tags": [
+      "alert",
+      "caution",
+      "important"
+    ],
+    "synonyms": [
+      "danger",
+      "notice"
+    ],
+    "candidates": [
+      {
+        "kind": "iconify",
+        "ref": "lucide:triangle-alert",
+        "scale": 1.2,
+        "color": "#FFFFFF"
+      }
+    ]
+  },
+  "idea": {
+    "tags": [
+      "lightbulb",
+      "insight",
+      "tip"
+    ],
+    "synonyms": [
+      "concept",
+      "thought"
+    ],
+    "candidates": [
+      {
+        "kind": "iconify",
+        "ref": "lucide:lightbulb",
+        "scale": 1.2,
+        "color": "#FFFFFF"
+      }
+    ]
+  },
+  "keyboard": {
+    "tags": [
+      "typing",
+      "input",
+      "shortcut"
+    ],
+    "synonyms": [
+      "keys",
+      "type"
+    ],
+    "candidates": [
+      {
+        "kind": "iconify",
+        "ref": "lucide:keyboard",
+        "scale": 1.2,
+        "color": "#FFFFFF"
+      }
+    ]
+  },
+  "mobile": {
+    "tags": [
+      "phone",
+      "app",
+      "device"
+    ],
+    "synonyms": [
+      "smartphone",
+      "ios",
+      "android"
+    ],
+    "candidates": [
+      {
+        "kind": "iconify",
+        "ref": "lucide:smartphone",
+        "scale": 1.2,
+        "color": "#FFFFFF"
+      }
+    ]
+  },
+  "video": {
+    "tags": [
+      "media",
+      "play",
+      "youtube"
+    ],
+    "synonyms": [
+      "movie",
+      "clip",
+      "stream"
+    ],
+    "candidates": [
+      {
+        "kind": "iconify",
+        "ref": "lucide:video",
+        "scale": 1.2,
+        "color": "#FFFFFF"
+      }
+    ]
+  },
+  "music": {
+    "tags": [
+      "audio",
+      "sound",
+      "podcast"
+    ],
+    "synonyms": [
+      "song",
+      "voice"
+    ],
+    "candidates": [
+      {
+        "kind": "iconify",
+        "ref": "lucide:music",
+        "scale": 1.2,
+        "color": "#FFFFFF"
+      }
+    ]
+  },
+  "email": {
+    "tags": [
+      "message",
+      "mail",
+      "contact"
+    ],
+    "synonyms": [
+      "inbox",
+      "send"
+    ],
+    "candidates": [
+      {
+        "kind": "iconify",
+        "ref": "lucide:mail",
+        "scale": 1.2,
+        "color": "#FFFFFF"
+      }
+    ]
+  },
+  "chart": {
+    "tags": [
+      "graph",
+      "growth",
+      "analytics"
+    ],
+    "synonyms": [
+      "plot",
+      "trend"
+    ],
+    "candidates": [
+      {
+        "kind": "iconify",
+        "ref": "lucide:line-chart",
+        "scale": 1.2,
+        "color": "#FFFFFF"
+      }
+    ]
+  },
+  "package": {
+    "tags": [
+      "library",
+      "module",
+      "pip"
+    ],
+    "synonyms": [
+      "dependency",
+      "install"
+    ],
+    "candidates": [
+      {
+        "kind": "iconify",
+        "ref": "lucide:package",
+        "scale": 1.2,
+        "color": "#FFFFFF"
+      }
+    ]
+  },
+  "fire": {
+    "tags": [
+      "hot",
+      "trending",
+      "energy"
+    ],
+    "synonyms": [
+      "popular",
+      "fast"
+    ],
+    "candidates": [
+      {
+        "kind": "iconify",
+        "ref": "lucide:flame",
+        "scale": 1.2,
+        "color": "#FFFFFF"
+      }
+    ]
+  },
+  "star": {
+    "tags": [
+      "favorite",
+      "rating",
+      "highlight"
+    ],
+    "synonyms": [
+      "featured",
+      "best"
+    ],
+    "candidates": [
+      {
+        "kind": "iconify",
+        "ref": "lucide:star",
+        "scale": 1.2,
+        "color": "#FFFFFF"
+      }
+    ]
+  },
+  "target": {
+    "tags": [
+      "goal",
+      "aim",
+      "objective"
+    ],
+    "synonyms": [
+      "focus",
+      "bullseye"
+    ],
+    "candidates": [
+      {
+        "kind": "iconify",
+        "ref": "lucide:target",
+        "scale": 1.2,
+        "color": "#FFFFFF"
+      }
+    ]
+  },
+  "shield": {
+    "tags": [
+      "protect",
+      "safe",
+      "privacy"
+    ],
+    "synonyms": [
+      "guard",
+      "secure"
+    ],
+    "candidates": [
+      {
+        "kind": "iconify",
+        "ref": "lucide:shield",
+        "scale": 1.2,
+        "color": "#FFFFFF"
+      }
+    ]
+  },
+  "brain": {
+    "tags": [
+      "think",
+      "ai",
+      "mind"
+    ],
+    "synonyms": [
+      "intelligence",
+      "learn"
+    ],
+    "candidates": [
+      {
+        "kind": "iconify",
+        "ref": "lucide:brain",
+        "scale": 1.2,
+        "color": "#FFFFFF"
+      }
+    ]
+  },
+  "coffee": {
+    "tags": [
+      "break",
+      "fun",
+      "casual"
+    ],
+    "synonyms": [
+      "relax",
+      "pause"
+    ],
+    "candidates": [
+      {
+        "kind": "iconify",
+        "ref": "lucide:coffee",
+        "scale": 1.2,
+        "color": "#FFFFFF"
+      }
     ]
   }
 }

@@ -5,10 +5,16 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
+_ANSI = re.compile(r"\x1b\[[0-9;]*m")
 _ANIM_DONE = re.compile(r"Animation\s+(\d+)\s*:\s*Partial")
 _ANIM_TQDM = re.compile(r"Animation\s+(\d+):.*?(\d+)%.*?(\d+)/(\d+)")
 _COMBINE = re.compile(r"Combining|Writing.*Movie|concatenat", re.I)
 _FILE_READY = re.compile(r"File ready at|Rendered ", re.I)
+_SCENE_LOAD = re.compile(r"Rendering|Reading|Writing.*Scene|scene_file", re.I)
+
+
+def _clean_line(line: str) -> str:
+    return _ANSI.sub("", line).replace("\r", " ").strip()
 
 
 class ManimProgressParser:
@@ -31,9 +37,13 @@ class ManimProgressParser:
         return cls(max(est, 12))
 
     def feed(self, line: str) -> tuple[int, str] | None:
-        line = line.strip()
+        line = _clean_line(line)
         if not line:
             return None
+
+        if _SCENE_LOAD.search(line) and "Partial" not in line:
+            self.phase = "Loading scene"
+            return max(3, min(8, self._percent()[0])), self.phase
 
         match = _ANIM_DONE.search(line)
         if match:
@@ -56,7 +66,7 @@ class ManimProgressParser:
             )
             frac = (self.completed + (cur / total)) / self.estimated_total
             self.phase = f"Animation {idx + 1} ({pct_inner}%)"
-            return min(95, int(frac * 92)), self.phase
+            return min(95, max(5, int(frac * 92))), self.phase
 
         if _COMBINE.search(line):
             self.phase = "Combining video"
@@ -74,5 +84,5 @@ class ManimProgressParser:
             self.max_index + 1,
             self.completed + 2,
         )
-        pct = min(94, int((self.completed / self.estimated_total) * 92))
+        pct = min(94, max(5, int((self.completed / self.estimated_total) * 92)))
         return pct, self.phase

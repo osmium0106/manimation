@@ -176,12 +176,17 @@ BEATS = [
 
 class GeneratedScene({scene_base}):
     def construct(self):
+        self.project_dir = Path(__file__).resolve().parent
         self.set_theme(THEME)
         _apply_bg(self, THEME)
         for i, beat in enumerate(BEATS):
             run_beat_from_spec(self, beat, use_camera=USE_CAMERA)
             if i < len(BEATS) - 1:
-                self.beat_transition()
+                nxt = BEATS[i + 1]
+                if nxt.get("continue_beat"):
+                    self.wait(0.12)
+                else:
+                    self.beat_transition()
 """
 
     return _format_python(header + body + footer)

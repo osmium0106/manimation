@@ -1,5 +1,8 @@
 # Beat Script Template — Manimations Studio
 
+**Author:** Divyanshu Singh  
+**Full option reference:** `/docs` in browser · `platform/assets/docs/` · Beat editor UI
+
 Use this file in the **Beat script** tab. Studio **parses** every section into beat JSON — rendering is a **separate async step** (preview auto-starts after Generate; use **Re-render** to refresh).
 
 ---
@@ -25,6 +28,8 @@ Use this file in the **Beat script** tab. Studio **parses** every section into b
 - Joke beats: setup lines in TEXT, last line as punchline; **exactly 2 icons** (primary + swap); EMPHASIS wiggle on punchline word.
 - Camera beats: set `CAMERA: moving` (meta + beat) and add CAMERA hooks; always end with `cam_restore: exit`.
 - Icon panel side: `card_right_*` / `text_right_*` → icons on **left**. `card_left_*` / `text_left_*` → icons on **right**.
+- **Icon entrance:** optional `ICON_ENTRANCE:` per beat — `fade_in`, `pop_in`, `slide_from_left`, `slide_from_right`, `draw_on`, `pulse`.
+- **Continue beat:** optional `CONTINUE: yes` — skip black transition into the next beat.
 
 ### Icon patterns at a glance
 
@@ -54,6 +59,7 @@ NAME:        Your Episode Title
 TYPE:       statement          # statement | question | joke punchline | explain | recap
 DURATION:   ~6s
 LAYOUT:     card_right_icon_left
+ICON_ENTRANCE: fade_in        # fade_in | pop_in | slide_from_left | slide_from_right | draw_on | pulse
 CAMERA:     moving             # moving | none
 
 ─── TIMELINE ───
@@ -284,6 +290,39 @@ icon_desktop: boxicons:desktop-filled | color: WHITE | trigger: desktop
 | `together` | All icons fade in after text (ignore trigger timing) |
 | `on_word` | Each `trigger:` icon appears when that word is typed |
 | `auto` (default) | Word-sync if any icon has `trigger:`; others at end |
+
+---
+
+## ICON ENTRANCE (how icons appear)
+
+Per-beat animation when icons are revealed in batch (not word-sync). Also editable in the **Beats** tab.
+
+```
+ICON_ENTRANCE: pop_in
+```
+
+| Value | Effect |
+|-------|--------|
+| `fade_in` | **Default** — gentle FadeIn |
+| `pop_in` | GrowFromCenter from near-zero |
+| `slide_from_left` | Slide in from left panel edge |
+| `slide_from_right` | Slide in from right panel edge |
+| `draw_on` | Stroke draws on (Create) |
+| `pulse` | Fade in + subtle scale pulse |
+
+Word-sync icons (`ICON REVEAL: on_word`) use per-word timing; `ICON_ENTRANCE` applies to primary/batch/`together` reveals.
+
+---
+
+## CONTINUE (skip beat transition)
+
+Keep the scene visible into the next beat — no black sweep between them:
+
+```
+CONTINUE:   yes
+```
+
+Use for multi-part jokes or continuous explanations split across beats. Set in **Beats** editor or JSON: `"continue_beat": true`.
 
 ---
 
@@ -541,6 +580,8 @@ HOLD: 1.2s
 | LAYOUT | Yes | See layout table (incl. `code_full_card`) |
 | ICON GRID | If 2–4 icons together | auto, horizontal, vertical, triple_top, triple_bottom, quad |
 | ICON REVEAL | Optional | auto, on_word, together |
+| ICON_ENTRANCE | Optional | fade_in, pop_in, slide_from_left, slide_from_right, draw_on, pulse |
+| CONTINUE | Optional | yes — no fade transition to next beat |
 | CONTENT / LABEL | Yes | Yellow top heading |
 | CONTENT / TEXT | Yes | `TEXT (card, black)`, `TEXT (white, on BG)`, `LIST (card, checks):`, or `─── CODE ───` |
 | ICONS | Usually | 1–4 icons — skip for `code_demo` |

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import subprocess
 import threading
 from datetime import datetime, timezone
 from pathlib import Path
@@ -14,6 +15,7 @@ RenderFn = Callable[[ProgressCallback | None], None]
 
 _locks: dict[str, threading.Lock] = {}
 _registry_lock = threading.Lock()
+_active_processes: dict[str, subprocess.Popen] = {}
 
 _STATUS_FILES: dict[JobKind, str] = {
     "preview": ".render_status.json",
@@ -41,6 +43,48 @@ def _project_lock(project_id: str, kind: JobKind) -> threading.Lock:
 
 def _now_iso() -> str:
     return datetime.now(timezone.utc).isoformat()
+
+
+def register_active_process(project_id: str, kind: JobKind, proc: subprocess.Popen) -> None:
+    with _registry_lock:
+        _active_processes[_lock_key(project_id, kind)] = proc
+
+
+def unregister_active_process(project_id: str, kind: JobKind) -> None:
+    with _registry_lock:
+        _active_processes.pop(_lock_key(project_id, kind), None)
+
+
+def cancel_render_job(project_id: str, kind: JobKind, renders_dir: Path) -> dict:
+    """Request cancellation; kill Manim subprocess if running."""
+    key = _lock_key(project_id, kind)
+    with _registry_lock:
+        proc = _active_processes.get(key)
+    if proc and proc.poll() is None:
+        proc.terminate()
+        try:
+            proc.wait(timeout=3)
+        except subprocess.TimeoutExpired:
+            proc.kill()
+    unregister_active_process(project_id, kind)
+    payload = {
+        "status": "cancelled",
+        "finished_at": _now_iso(),
+        "error": None,
+        "phase": "Cancelled",
+    }
+    current = read_status(renders_dir, kind)
+    if current.get("status") == "rendering":
+        if "progress" in current:
+            payload["progress"] = current.get("progress", 0)
+        write_status(renders_dir, kind, payload)
+    lock = _project_lock(project_id, kind)
+    if lock.locked():
+        try:
+            lock.release()
+        except RuntimeError:
+            pass
+    return read_status(renders_dir, kind)
 
 
 def read_status(renders_dir: Path, kind: JobKind = "preview") -> dict:
@@ -89,8 +133,11 @@ def start_render_job(
         "error": None,
     }
     if track_progress:
-        initial["progress"] = 0
-        initial["phase"] = "Starting Manim"
+        existing = read_status(renders_dir, kind)
+        initial["progress"] = existing.get("progress", 0) if existing.get("status") == "rendering" else 0
+        initial["phase"] = existing.get("phase") or "Starting Manim"
+        if existing.get("started_at") and existing.get("status") == "rendering":
+            initial["started_at"] = existing["started_at"]
     write_status(renders_dir, kind, initial)
 
     def _run() -> None:
@@ -105,6 +152,9 @@ def start_render_job(
 
         try:
             render_fn(progress_cb if track_progress else None)
+            current = read_status(renders_dir, kind)
+            if current.get("status") == "cancelled":
+                return
             done: dict = {
                 "status": "done",
                 "finished_at": _now_iso(),
@@ -115,6 +165,9 @@ def start_render_job(
                 done["phase"] = "Complete"
             write_status(renders_dir, kind, done)
         except Exception as exc:
+            current = read_status(renders_dir, kind)
+            if current.get("status") == "cancelled":
+                return
             failed: dict = {
                 "status": "error",
                 "finished_at": _now_iso(),
@@ -124,6 +177,7 @@ def start_render_job(
                 failed["phase"] = "Failed"
             write_status(renders_dir, kind, failed)
         finally:
+            unregister_active_process(project_id, kind)
             lock.release()
 
     thread_name = f"{kind}-render-{project_id}"

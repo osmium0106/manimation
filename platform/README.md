@@ -2,6 +2,9 @@
 
 Local-first platform: describe beats in chat or script → OpenAI structures them → visual resolver picks icons → async Manim preview and 1080p export.
 
+**Author:** Divyanshu Singh  
+**Documentation:** [http://127.0.0.1:5173/docs](http://127.0.0.1:5173/docs) — book icon in the **top header bar** (left of project name)
+
 **SQLite** stores the global theme library. **Projects** remain JSON on disk under `~/manimations-studio/projects/` (or `MANIMATIONS_DATA_DIR` in Docker).
 
 ## Setup
@@ -46,15 +49,19 @@ Save project.json (beats only — no render yet)
        ↓
 POST /render (returns immediately, status: rendering)
        ↓
-GET /render-status (poll every 2s)
+GET /render-status (poll every ~400ms)
        ↓
-preview MP4 (latest.mp4)
+preview MP4 (latest.mp4) — UI shows progress % + phase
 
 1080p60: POST /export → GET /export-status (progress % + phase) → download
 ```
 
 | Endpoint | Purpose |
 |----------|---------|
+| `GET /api/docs` | Documentation manifest (multi-page nav) |
+| `GET /api/docs/pages/{slug}` | Single documentation page |
+| `GET /api/studio-guide` | Legacy combined guide markdown |
+| `GET /api/beat-script-template` | Beat script starter template |
 | `POST /api/projects/{id}/chat` | AI updates beats; returns project (no render) |
 | `POST /api/projects/{id}/script` | Parse script → beats (no render) |
 | `POST /api/projects/{id}/render` | Start preview render (`-ql`) in background |
@@ -106,6 +113,18 @@ Switch to **Beat script** in the left panel. Paste:
 Click **Generate from script** — this **parses and saves beats only**; preview render runs separately (async). Optional: **Use AI to parse** for free-form text.
 
 Supported beat types: `statement`, `question`, `joke`, `code_demo`, `list`, `compare`, `explain`, `recap`.
+
+**Beat options** (per beat in script, Beats editor, or JSON):
+
+- **Icon entrance:** `fade_in`, `pop_in`, `slide_from_left`, `slide_from_right`, `draw_on`, `pulse`
+- **Icon grid:** `auto`, `horizontal`, `vertical`, `triple_top`, `triple_bottom`, `quad`
+- **Icon reveal:** `auto`, `on_word`, `together`
+- **Continue beat:** skip black transition to next beat (`CONTINUE: yes`)
+- **Camera:** `moving` + hooks — see `platform/assets/studio-guide.md`
+
+## Beats editor
+
+Switch to **Beats** in the left panel to reorder beats, edit fields inline, pick icons, set icon entrance, and toggle **Continue into next beat**. Changes sync to the Beat script tab.
 
 ## Manim code editor
 

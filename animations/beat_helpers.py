@@ -6,7 +6,7 @@ import re
 from pathlib import Path
 
 from manim import *
-from manim.utils.rate_functions import smooth
+from manim.utils.rate_functions import smooth, there_and_back
 from manim.utils import rate_functions
 
 from theme_loader import DEFAULT_THEME, normalize_theme, resolve_manim_color  # noqa: E402
@@ -365,7 +365,7 @@ class BeatLayoutMixin:
         return self.place_bg_text(group, side, label)
 
     def shape_question(self, radius=0.8):
-        circle = Circle(radius=radius, color=WHITE, stroke_width=3)
+        circle = Circle(radius=radius, color=WHITE, stroke_width=6)
         mark = Text("?", font_size=90, color=YELLOW, weight=BOLD)
         mark.move_to(circle.get_center())
         return VGroup(circle, mark)
@@ -396,14 +396,17 @@ class BeatLayoutMixin:
         bounds = self.content_region_bounds(label)
         w, h = bounds["width"], bounds["height"]
         title_h = min(0.42, h * 0.08)
+        code_bg = self._pal("code_bg", CODE_BG)
+        code_bg_deep = self._pal("code_bg_deep", CODE_BG_DEEP)
+        code_border = self._pal("code_border", CODE_BORDER)
 
         outer = RoundedRectangle(
             width=w,
             height=h,
             corner_radius=0.18,
-            fill_color=CODE_BG,
+            fill_color=code_bg,
             fill_opacity=1,
-            stroke_color=CODE_BORDER,
+            stroke_color=code_border,
             stroke_width=1.5,
         )
         outer.move_to([bounds["center_x"], bounds["center_y"], 0])
@@ -412,7 +415,7 @@ class BeatLayoutMixin:
             width=w - 0.04,
             height=title_h,
             corner_radius=0.16,
-            fill_color=CODE_BG_DEEP,
+            fill_color=code_bg_deep,
             fill_opacity=1,
             stroke_width=0,
         )
@@ -1129,11 +1132,49 @@ class BeatLayoutMixin:
             self.remove(*remaining)
 
     def beat_transition(self, run_time=0.8, hold=0.15):
-        """Pause between beats — keeps orange background visible (no black flash)."""
+        """Pause between beats — keeps background visible (no black flash)."""
         if hasattr(self, "cam_restore"):
             self.cam_restore(run_time=min(run_time, 0.5))
         if hold > 0:
             self.wait(hold)
+
+    def play_icon_entrance(self, mob: Mobject, mode: str = "fade_in", *, run_time=0.45):
+        """Reveal icon using FadeIn — reliable for Lucide/stroke SVG icons."""
+        mode = (mode or "fade_in").lower().replace("-", "_")
+        if mode in ("draw_on", "none", "instant", "off"):
+            mode = "fade_in" if mode == "draw_on" else mode
+
+        if mob in self.mobjects:
+            self.remove(mob)
+
+        if mode in ("none", "instant", "off"):
+            self.add(mob)
+            return
+
+        if mode == "pop_in":
+            self.play(
+                FadeIn(mob, scale=0.25),
+                run_time=run_time,
+                rate_func=rate_functions.ease_out_back,
+            )
+        elif mode == "slide_from_left":
+            self.play(FadeIn(mob, shift=RIGHT * 0.55), run_time=run_time, rate_func=smooth)
+        elif mode == "slide_from_right":
+            self.play(FadeIn(mob, shift=LEFT * 0.55), run_time=run_time, rate_func=smooth)
+        elif mode == "pulse":
+            self.play(FadeIn(mob), run_time=run_time * 0.55, rate_func=smooth)
+            self.play(mob.animate.scale(1.05), run_time=0.12, rate_func=there_and_back)
+        else:
+            self.play(FadeIn(mob), run_time=run_time, rate_func=smooth)
+
+    def suggested_hold(self, beat: dict, pacing: str = "relaxed") -> float:
+        """Estimate hold duration from content length."""
+        base = 1.8 if pacing == "relaxed" else 1.0
+        chars = len(beat.get("label") or "")
+        for key in ("card_lines", "bg_lines", "list_lines", "left_lines", "right_lines"):
+            chars += sum(len(str(x)) for x in (beat.get(key) or []))
+        extra = min(2.5, chars * 0.012)
+        return round(base + extra, 1)
 
 
 class BeatScene(BeatLayoutMixin, Scene):

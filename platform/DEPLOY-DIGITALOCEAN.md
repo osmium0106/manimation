@@ -466,4 +466,5 @@ sudo systemctl reload nginx
 - `platform/deploy/nginx-host-docker.conf.example` — Host nginx proxying to Docker (`8088`) with long API timeouts  
 - `platform/deploy/manimations-backend.service.example` — systemd unit  
 - `platform/README.md` — local development  
+- `platform/assets/docs/` — multi-page Studio documentation (Divyanshu Singh)  
 - `platform/.env.example` — environment variables  

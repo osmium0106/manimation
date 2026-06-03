@@ -428,6 +428,7 @@ def list_beat_types() -> list[dict[str, Any]]:
                 "visuals": spec.get("visuals", []),
                 "regions": spec.get("regions", []),
                 "script_template": spec.get("script_template", ""),
+                "camera_defaults": spec.get("camera_defaults", []),
             }
         )
     return out

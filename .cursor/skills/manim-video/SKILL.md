@@ -37,10 +37,14 @@ When the user gives narration or beats (not Python):
 
 ## Manimations Studio
 
-Web UI at `platform/` — chat/script → beats JSON → async Manim preview + 1080p export.
+Web UI at `platform/` — chat/script → beats JSON → async Manim preview + 1080p export. **Author:** Divyanshu Singh.
 
+- **In-app docs:** book icon in **top header** (left of project name) → opens `/docs` in a new tab
 - Beat types: `statement`, `question`, `joke`, **`code_demo`**, `list`, `compare`, `explain`, `recap`
-- Beat script format: [script-template.md](script-template.md) · `platform/assets/beat-script-template.md`
+- Beat script format: [script-template.md](script-template.md) · `platform/assets/beat-script-template.md` · `platform/assets/docs/`
+- **Beats editor tabs:** Content, Icon (full picker + hex color), Emphasis, Camera
+- **Icon entrances:** `fade_in`, `pop_in`, `slide_from_*`, `pulse`, `none`
+- **Preview progress:** percentage + phase during 420p async render
 - **Themes:** pick/create before project; backgrounds + typography stored in SQLite
 - Chat/script **save beats only**; preview via async `POST /render` + poll `/render-status`
 
@@ -68,6 +72,7 @@ Web UI at `platform/` — chat/script → beats JSON → async Manim preview + 1
 
 | Topic | File |
 |-------|------|
+| Studio full guide | `platform/assets/docs/` · `/docs` in browser |
 | Beat script format | [script-template.md](script-template.md) |
 | Text/narration → scenes | [text-to-manim.md](text-to-manim.md) |
 | External repo patterns | [reference/rohitg00-patterns.md](reference/rohitg00-patterns.md) |

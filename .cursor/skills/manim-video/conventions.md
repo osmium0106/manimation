@@ -2,6 +2,8 @@
 
 Manim Community Edition **v0.20.1** only. Do not use ManimGL or 3b1b/manim APIs.
 
+**Manimations Studio** (Divyanshu Singh): see `platform/assets/docs/` or `/docs` in browser — header book icon. Beat editor tabs: Content, Icon, Emphasis, Camera.
+
 ## Repo layout
 
 | Path | Purpose |

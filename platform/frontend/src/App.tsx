@@ -6,6 +6,8 @@ import {
   Download,
   FileText,
   Film,
+  FolderOpen,
+  LayoutList,
   Loader2,
   MessageSquare,
   RotateCcw,
@@ -22,6 +24,7 @@ import {
   ThemeSummary,
   BeatTypeMeta,
   beatScriptTemplateDownloadUrl,
+  cancelPreviewRender,
   downloadUrl,
   exportHd,
   formatPython,
@@ -29,6 +32,7 @@ import {
   getBeatTypes,
   getProject,
   getProjectCode,
+  getProjectScript,
   getTheme,
   health,
   lintPython,
@@ -42,14 +46,26 @@ import {
   saveProjectCode,
   sendChat,
   submitScript,
+  validateBeats,
 } from "./api";
 import { CodeEditor } from "./CodeEditor";
+import { BeatEditor } from "./components/BeatEditor";
 import { BeatTypePicker } from "./components/BeatTypePicker";
 import { LayoutPreview } from "./components/LayoutPreview";
+import { ProjectHub } from "./components/ProjectHub";
 import { ThemeGate } from "./components/ThemeGate";
+import {
+  clearLastProjectId,
+  clearProjectUrl,
+  getLastProjectId,
+  projectIdFromUrl,
+  setLastProjectId,
+  setProjectUrl,
+} from "./projectStorage";
 
-type PanelMode = "chat" | "script";
+type PanelMode = "chat" | "script" | "beats";
 type PreviewView = "video" | "code";
+type AppScreen = "hub" | "create" | "studio";
 
 function detectScriptBeatType(script: string): string | null {
   const blocks = script.split(/^###\s*BEAT/m).slice(1);
@@ -95,12 +111,30 @@ export default function App() {
   const [themeName, setThemeName] = useState<string | null>(null);
   const [themes, setThemes] = useState<ThemeSummary[]>([]);
   const [themeChanging, setThemeChanging] = useState(false);
+  const [appScreen, setAppScreen] = useState<AppScreen>("hub");
+  const [booting, setBooting] = useState(true);
+  const [previewProgress, setPreviewProgress] = useState(0);
+  const [previewPhase, setPreviewPhase] = useState<string | null>(null);
+  const [statusMessage, setStatusMessage] = useState<string | null>(null);
+  const [validationWarnings, setValidationWarnings] = useState<string | null>(null);
   const chatEndRef = useRef<HTMLDivElement>(null);
+
+  const syncScriptFromBeats = useCallback(async (projectId: string) => {
+    try {
+      const res = await getProjectScript(projectId);
+      setScript(res.script);
+    } catch {
+      /* ignore */
+    }
+  }, []);
 
   const loadStudioProject = useCallback(async (projectId: string) => {
     const p = await getProject(projectId);
     setProject(p);
     setStudioReady(true);
+    setAppScreen("studio");
+    setLastProjectId(projectId);
+    setProjectUrl(projectId);
     if (p.theme_id) {
       try {
         const t = await getTheme(p.theme_id);
@@ -109,7 +143,19 @@ export default function App() {
         setThemeName(p.theme_id);
       }
     }
-  }, []);
+    await syncScriptFromBeats(projectId);
+    if (p.beats?.length) {
+      validateBeats(projectId)
+        .then((v) => {
+          if (v.warning_count > 0) {
+            setValidationWarnings(`${v.warning_count} visual warning(s) before render`);
+          } else {
+            setValidationWarnings(null);
+          }
+        })
+        .catch(() => setValidationWarnings(null));
+    }
+  }, [syncScriptFromBeats]);
 
   useEffect(() => {
     health()
@@ -123,7 +169,20 @@ export default function App() {
         }
       })
       .catch(() => setBeatTypes([]));
-  }, []);
+
+    const urlId = projectIdFromUrl();
+    const storedId = getLastProjectId();
+    const openId = urlId || storedId;
+    if (openId) {
+      loadStudioProject(openId).catch(() => {
+        clearLastProjectId();
+        clearProjectUrl();
+        setAppScreen("hub");
+      }).finally(() => setBooting(false));
+    } else {
+      setBooting(false);
+    }
+  }, [loadStudioProject]);
 
   useEffect(() => {
     const detected = detectScriptBeatType(script);
@@ -165,12 +224,18 @@ export default function App() {
     setHasPreview(true);
     setPreviewKey(Date.now());
     setHdReady(false);
+    setPreviewProgress(100);
+    setPreviewPhase("Complete");
+    setStatusMessage(null);
   };
 
   const beginRenderPreview = () => {
     setRendering(true);
     setHasPreview(false);
     setHdReady(false);
+    setPreviewProgress(0);
+    setPreviewPhase("Starting render");
+    setStatusMessage("Rendering preview…");
   };
 
   const loadCode = useCallback(
@@ -214,11 +279,16 @@ export default function App() {
   const canRender =
     Boolean(project?.beats.length) || codeCustomized || hasPreview;
 
+  const onPreviewProgress = (progress: number, phase?: string | null) => {
+    setPreviewProgress(progress);
+    if (phase) setPreviewPhase(phase);
+  };
+
   const runPreviewRender = async (
     projectId: string,
     options?: { code?: string; fromBeats?: boolean }
   ) => {
-    const rendered = await renderProject(projectId, options);
+    const rendered = await renderProject(projectId, options, onPreviewProgress);
     if (rendered.preview_url) {
       onPreviewReady();
       setPreviewView("video");
@@ -252,17 +322,20 @@ export default function App() {
     if (!msg || !project || loading) return;
     setInput("");
     setLoading(true);
-    beginRenderPreview();
     setError(null);
+    beginRenderPreview();
+    setStatusMessage("Writing beats…");
     try {
       const res = await sendChat(project.id, msg);
       setProject(res.project);
       setCodeCustomized(false);
+      await syncScriptFromBeats(project.id);
       await loadCode(project.id, { force: true });
       if (res.preview_url) {
         onPreviewReady();
         setPreviewView("video");
       } else if (res.project.beats?.length) {
+        setStatusMessage("Rendering preview…");
         try {
           await runPreviewRender(project.id, { fromBeats: true });
         } catch (e) {
@@ -276,7 +349,20 @@ export default function App() {
     } finally {
       setLoading(false);
       setRendering(false);
+      setStatusMessage(null);
     }
+  };
+
+  const handleCancelRender = async () => {
+    if (!project) return;
+    try {
+      await cancelPreviewRender(project.id);
+    } catch {
+      /* ignore */
+    }
+    setRendering(false);
+    setPreviewPhase("Cancelled");
+    setStatusMessage(null);
   };
 
   const handleScriptGenerate = async () => {
@@ -288,6 +374,7 @@ export default function App() {
       const res = await submitScript(project.id, script, useAiParse);
       setProject(res.project);
       setCodeCustomized(false);
+      await syncScriptFromBeats(project.id);
       await loadCode(project.id, { force: true });
       if (res.preview_url) {
         onPreviewReady();
@@ -374,8 +461,7 @@ export default function App() {
       await saveProjectCode(project.id, code, false);
       setCodeCustomized(true);
       setProject({ ...project, code_customized: true });
-      const rendered = await renderProject(project.id, { code });
-      setCodeCustomized(Boolean(rendered.code_customized));
+      const rendered = await renderProject(project.id, { code }, onPreviewProgress);
       if (rendered.preview_url) {
         onPreviewReady();
         setPreviewView("video");
@@ -412,7 +498,7 @@ export default function App() {
       setProject(res.project);
       setShowHistory(false);
       beginRenderPreview();
-      await renderProject(project.id);
+      await renderProject(project.id, undefined, onPreviewProgress);
       onPreviewReady();
       await loadCode(project.id, { force: true });
       await refreshSnapshots(project.id);
@@ -436,9 +522,9 @@ export default function App() {
         await saveProjectCode(project.id, code, false);
         setCodeCustomized(true);
         setProject({ ...project, code_customized: true });
-        await renderProject(project.id, { code });
+        await renderProject(project.id, { code }, onPreviewProgress);
       } else {
-        await renderProject(project.id, { fromBeats: true });
+        await renderProject(project.id, { fromBeats: true }, onPreviewProgress);
       }
       onPreviewReady();
     } catch (e) {
@@ -481,8 +567,30 @@ export default function App() {
 
   const chat: ChatMessage[] = project?.chat ?? [];
 
-  if (!studioReady || !project) {
-    return <ThemeGate onReady={loadStudioProject} />;
+  if (booting) {
+    return (
+      <div className="theme-gate">
+        <Loader2 size={40} className="spin" />
+      </div>
+    );
+  }
+
+  if (appScreen === "hub") {
+    return (
+      <ProjectHub
+        onOpen={(id) => loadStudioProject(id)}
+        onCreate={() => setAppScreen("create")}
+      />
+    );
+  }
+
+  if (appScreen === "create" || !studioReady || !project) {
+    return (
+      <ThemeGate
+        onReady={loadStudioProject}
+        onBack={() => setAppScreen("hub")}
+      />
+    );
   }
 
   return (
@@ -493,6 +601,17 @@ export default function App() {
             <Film size={18} />
             <span>Manimations Studio</span>
           </div>
+          {project && (
+            <button
+              type="button"
+              className="header-docs-btn"
+              onClick={() => window.open("/docs/introduction", "_blank", "noopener,noreferrer")}
+              title="Open documentation"
+              aria-label="Open documentation"
+            >
+              <BookOpen size={16} />
+            </button>
+          )}
           {project && <span className="project-name">{project.name}</span>}
           {project && themes.length > 0 ? (
             <label className="theme-select-wrap">
@@ -515,6 +634,18 @@ export default function App() {
           )}
         </div>
         <div className="header-right">
+          <button
+            type="button"
+            className="btn-ghost"
+            onClick={() => {
+              setStudioReady(false);
+              setProject(null);
+              setAppScreen("hub");
+            }}
+          >
+            <FolderOpen size={16} />
+            Projects
+          </button>
           {apiOk === false && (
             <span className="badge badge-warn">Set OPENAI_API_KEY in platform/.env</span>
           )}
@@ -565,6 +696,13 @@ export default function App() {
               <FileText size={14} />
               Beat script
             </button>
+            <button
+              className={`panel-tab ${mode === "beats" ? "active" : ""}`}
+              onClick={() => setMode("beats")}
+            >
+              <LayoutList size={14} />
+              Beats
+            </button>
           </div>
 
           {mode === "chat" ? (
@@ -576,7 +714,8 @@ export default function App() {
                     <h2>Describe your animation</h2>
                     <p>
                       Describe your animation in plain English, or use the Beat script
-                      tab for structured scripts. Preview and code editor are on the right.
+                      tab for structured scripts. Click the book icon in the top bar
+                      (left of the project name) to open full documentation.
                     </p>
                   </div>
                 )}
@@ -589,7 +728,7 @@ export default function App() {
                   <div className="msg msg-assistant">
                     <div className="msg-bubble typing">
                       <Loader2 size={16} className="spin" />
-                      Generating beats & rendering…
+                      {statusMessage || "Working…"}
                     </div>
                   </div>
                 )}
@@ -680,7 +819,20 @@ export default function App() {
                 )}
               </button>
             </div>
+          ) : mode === "beats" ? (
+            <BeatEditor
+              projectId={project.id}
+              beats={project.beats}
+              beatTypes={beatTypes}
+              pacing={project.pacing}
+              onChange={(beats) => setProject({ ...project, beats })}
+              onSaved={() => syncScriptFromBeats(project.id)}
+            />
           ) : null}
+
+          {validationWarnings && (
+            <div className="validation-warn">{validationWarnings}</div>
+          )}
 
           {error && <div className="error-bar">{error}</div>}
         </aside>
@@ -815,21 +967,39 @@ export default function App() {
                 {(rendering || (loading && !hasPreview)) && !exporting && (
                   <div className="preview-empty">
                     <Loader2 size={40} className="spin" />
-                    <p>Rendering with Manim…</p>
+                    <p>{previewPhase || statusMessage || "Rendering with Manim…"}</p>
+                    <div className="export-progress-bar" aria-hidden="true">
+                      <div
+                        className="export-progress-fill"
+                        style={{ width: `${Math.max(2, Math.min(100, previewProgress))}%` }}
+                      />
+                    </div>
+                    <p className="export-progress-label">
+                      {Math.round(Math.max(0, Math.min(100, previewProgress)))}% — {previewPhase || "Rendering"}
+                    </p>
+                    {rendering && (
+                      <button type="button" className="btn-ghost sm" onClick={handleCancelRender}>
+                        Cancel render
+                      </button>
+                    )}
                   </div>
                 )}
                 {exporting && (
                   <div className="preview-empty export-progress-wrap">
                     <Loader2 size={40} className="spin" />
                     <p>Exporting 1080p60…</p>
-                    <div className="export-progress-bar" aria-hidden="true">
+                    <div
+                      className={`export-progress-bar ${exportProgress <= 0 ? "indeterminate" : ""}`}
+                      aria-hidden="true"
+                    >
                       <div
                         className="export-progress-fill"
-                        style={{ width: `${exportProgress}%` }}
+                        style={{ width: exportProgress > 0 ? `${exportProgress}%` : undefined }}
                       />
                     </div>
                     <p className="export-progress-label">
-                      {exportProgress}% — {exportPhase || "Rendering"}
+                      {exportProgress > 0 ? `${exportProgress}% — ` : ""}
+                      {exportPhase || "Rendering"}
                     </p>
                   </div>
                 )}

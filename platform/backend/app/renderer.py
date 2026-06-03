@@ -51,6 +51,15 @@ def _emit_progress(
 ) -> None:
     if not progress_callback:
         return
+    cleaned = line.replace("\r", "\n")
+    for part in cleaned.split("\n"):
+        part = part.strip()
+        if not part:
+            continue
+        update = parser.feed(part)
+        if update:
+            progress_callback(*update)
+            return
     update = parser.feed(line)
     if update:
         progress_callback(*update)
@@ -88,6 +97,8 @@ def render_scene(
     quality: str = "-ql",
     output_mp4: Path | None = None,
     progress_callback: ProgressCallback | None = None,
+    *,
+    process_registry: tuple[str, str] | None = None,
 ) -> Path:
     scene_file = scene_file.resolve()
     if scene_class == "GeneratedScene":
@@ -124,7 +135,14 @@ def render_scene(
         stderr=subprocess.STDOUT,
         text=True,
     )
+    if process_registry:
+        from app.render_jobs import register_active_process, unregister_active_process
+
+        project_id, kind = process_registry
+        register_active_process(project_id, kind, proc)
     output = _stream_process_output(proc, parser, progress_callback)
+    if process_registry:
+        unregister_active_process(project_id, kind)
     if proc.returncode != 0:
         tail = output[-4000:]
         raise RuntimeError(f"Manim render failed:\n{tail}")

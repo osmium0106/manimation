@@ -61,6 +61,71 @@ ICON_ALIASES: dict[str, str] = {
 
 ICONIFY_REF = re.compile(r"^[a-z0-9-]+:[a-z0-9-]+$")
 
+COLORFUL_ICONIFY_PREFIXES = frozenset(
+    {
+        "fa6-brands",
+        "fa-brands",
+        "fa7-brands",
+        "devicon",
+        "devicon-plain",
+        "logos",
+        "twemoji",
+        "noto",
+        "emojione",
+        "fluent-emoji-flat",
+        "fluent-emoji",
+        "skill-icons",
+        "simple-icons",
+        "catppuccin",
+        "material-icon-theme",
+        "vscode-icons",
+        "bxl",
+        "cib",
+        "ion",
+        "akar-icons",
+        "game-icons",
+    }
+)
+
+
+def is_colorful_iconify_ref(ref: str) -> bool:
+    if ":" not in ref:
+        return False
+    prefix = ref.split(":", 1)[0].lower()
+    return prefix in COLORFUL_ICONIFY_PREFIXES or prefix.startswith("emoji")
+
+
+def should_preserve_svg_colors(path: Path, ref: str = "") -> bool:
+    """Keep original fills for brand / multi-color SVGs; mono stroke icons get tinted."""
+    if ref.startswith("assets/") or ref.startswith("icons/"):
+        return True
+    if ref and is_colorful_iconify_ref(ref):
+        return True
+    try:
+        text = path.read_text()
+    except OSError:
+        return False
+    hex_fills = set(re.findall(r'fill="(#[0-9a-fA-F]{3,8})"', text))
+    hex_fills -= {"#000", "#000000", "#fff", "#ffffff", "#FFFFFF"}
+    if len(hex_fills) >= 2:
+        return True
+    if 'fill="none"' in text and "stroke=" in text:
+        colored = [f for f in re.findall(r'fill="([^"]+)"', text) if f not in ("none", "currentColor", "transparent")]
+        if not colored or (len(colored) == 1 and colored[0] in ("currentColor", "#000", "#000000")):
+            return False
+    if len(hex_fills) == 1:
+        return True
+    return False
+
+
+def normalize_icon_color(color: str | None) -> str | None:
+    """Return Manim tint color, or None to preserve SVG original colors."""
+    if color is None:
+        return None
+    if isinstance(color, str) and color.upper() in ("ORIGINAL", "PRESERVE", ""):
+        return None
+    return color
+
 
 def beat_dir(episode: int | str, beat: int | str) -> Path:
     ep = episode if str(episode).startswith("Episode") else f"Episode{episode}"
@@ -223,14 +288,42 @@ def fetch_iconify_svg(
     return path
 
 
-def _svg_to_mobject(path: Path, scale: float, color: str | None) -> "Mobject":
+def _svg_to_mobject(path: Path, scale: float, color: str | None, *, ref: str = "") -> "Mobject":
     from manim import SVGMobject
 
     mob = SVGMobject(str(path))
-    if color is not None:
-        mob.set_color(color)
+    tint = normalize_icon_color(color)
+    if tint is not None and not should_preserve_svg_colors(path, ref):
+        style_svg_mobject(mob, tint)
     mob.scale(scale)
     return mob
+
+
+# Minimum stroke widths for tinted Iconify / mono SVG icons (scene units).
+ICON_MIN_STROKE = 5.6  # 2× prior 2.8 — readable on orange course backgrounds
+ICON_MIN_STROKE_FILLED = 3.0  # 2× prior 1.5 when icon uses fill + stroke
+
+
+def style_svg_mobject(mob: "Mobject", color) -> None:
+    """Tint monochrome stroke icons; skip when SVG keeps its own palette."""
+    for sm in mob.get_family():
+        fill_op = sm.get_fill_opacity()
+        stroke_w = float(sm.get_stroke_width() or 0)
+        if fill_op is not None and fill_op > 0.01:
+            sm.set_fill(color, opacity=1)
+            if stroke_w > 0:
+                sm.set_stroke(
+                    color,
+                    width=max(stroke_w * 2, ICON_MIN_STROKE_FILLED),
+                    opacity=1,
+                )
+        elif stroke_w > 0:
+            sm.set_fill(color, opacity=0)
+            sm.set_stroke(
+                color,
+                width=max(stroke_w * 2, ICON_MIN_STROKE),
+                opacity=1,
+            )
 
 
 def save_beat_icon(
@@ -269,11 +362,6 @@ def load_beat_icon(
     scale: float = 1.0,
     color: str | None = None,
 ) -> "Mobject":
-    from manim import WHITE
-
-    if color is None:
-        color = WHITE
-    """Load an icon from the beat's local icons/ folder."""
     path = beat_icons_dir(episode, beat) / f"{icon_id}.svg"
     if not path.exists():
         manifest = read_beat_manifest(episode, beat)
@@ -285,7 +373,16 @@ def load_beat_icon(
                 f"Beat icon '{icon_id}' not found at {path}. "
                 f"Add it to {beat_manifest(episode, beat)} and run sync_beat_icons()."
             )
-    return _svg_to_mobject(path, scale, color)
+    ref = read_beat_manifest(episode, beat).get(icon_id, icon_id)
+    tint = normalize_icon_color(color)
+    if tint is None and color is None:
+        if isinstance(ref, str) and (is_colorful_iconify_ref(ref) or ref.startswith("assets/")):
+            pass
+        else:
+            from manim import WHITE
+
+            tint = WHITE
+    return _svg_to_mobject(path, scale, tint, ref=ref if isinstance(ref, str) else "")
 
 
 def prefetch(*icon_refs: str, force: bool = False) -> list[Path]:
@@ -331,4 +428,8 @@ def load_icon(
 
     prefix, name = value.split(":", 1)
     svg_path = fetch_iconify_svg(prefix, name)
-    return _svg_to_mobject(svg_path, scale, color)
+    tint = normalize_icon_color(color)
+    if tint is None and not should_preserve_svg_colors(svg_path, value):
+        from manim import WHITE
+        tint = WHITE
+    return _svg_to_mobject(svg_path, scale, tint, ref=value)

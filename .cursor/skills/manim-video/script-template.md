@@ -2,15 +2,27 @@
 
 Copy, fill in, and paste when requesting a new Manim video.
 
-**Source of truth:** `platform/assets/beat-script-template.md` (Studio) · `Episode{N}/beats/beat*/` (hand-authored Manim) · `animations/beat_helpers.py` · this file.
+**Author:** Divyanshu Singh  
+**Source of truth:** `platform/assets/docs/` (Studio docs site) · `platform/assets/beat-script-template.md` (Studio script) · `Episode{N}/beats/beat*/` (hand-authored Manim) · `animations/beat_helpers.py` · this file.
 
 ---
 
 ## Manimations Studio (Beat script tab)
 
-In **Manimations Studio**, select a **theme**, then paste beats into the Beat script tab and click **Generate from script**.
+In **Manimations Studio**, select a **theme**, then paste beats into the Beat script tab and click **Generate from script**. Click the **book icon** in the **top header bar** (left of the project name) to open **/docs** in a new tab (full documentation site).
 
 **Two-phase flow:** Generate **parses and saves beats only**. Preview render runs separately in the background (`POST /render` + poll `/render-status`). Use **Re-render** in the toolbar to refresh preview after edits.
+
+### Studio options quick reference
+
+| Option | Values |
+|--------|--------|
+| **Icon entrance** | `fade_in`, `pop_in`, `slide_from_left`, `slide_from_right`, `draw_on`, `pulse` |
+| **Icon grid** | `auto`, `horizontal`, `vertical`, `triple_top`, `triple_bottom`, `quad` |
+| **Icon reveal** | `auto`, `on_word`, `together` |
+| **Continue beat** | `CONTINUE: yes` / `"continue_beat": true` |
+| **Camera** | `none` \| `moving` + hooks (`cam_focus_left`, `cam_focus_right`, `cam_focus_card`, `cam_restore: exit`) |
+| **Card sizes** | 5.6×5.0, 5.6×4.6, 5.6×3.8, 5.0×2.8 |
 
 **Icons — describe + color (GPT picks Iconify), or paste explicit refs:**
 
@@ -218,6 +230,37 @@ icon_desktop: boxicons:desktop-filled | color: WHITE | trigger: desktop
 ```
 
 **3–4 icon word-sync:** camera restores to **full frame** so card + icon grid stay visible during sync (requires `CAMERA: moving` on MovingBeatScene projects; static BeatScene is already full frame).
+
+---
+
+## ICON ENTRANCE (Studio + beat script)
+
+How icons animate when revealed in batch (primary icon, `together` mode, joke primary before swap):
+
+```
+ICON_ENTRANCE: slide_from_left
+```
+
+| Value | Effect |
+|-------|--------|
+| `fade_in` | Default — FadeIn |
+| `pop_in` | GrowFromCenter |
+| `slide_from_left` | Slide from left panel |
+| `slide_from_right` | Slide from right panel |
+| `draw_on` | Create (stroke draw-on) |
+| `pulse` | FadeIn + scale pulse |
+
+Editable in **Beats** tab dropdown. JSON: `"icon_entrance": "pop_in"`.
+
+---
+
+## CONTINUE beat (no transition)
+
+```
+CONTINUE:   yes
+```
+
+Skips black sweep into next beat. JSON: `"continue_beat": true`.
 
 ```bash
 # Examples
@@ -619,6 +662,8 @@ TIMELINE:
 | LAYOUT | Yes | See layout presets |
 | ICON GRID | If 2–4 icons | auto, horizontal, vertical, triple_top, triple_bottom, quad |
 | ICON REVEAL | Optional | auto, on_word, together |
+| ICON_ENTRANCE | Optional | fade_in, pop_in, slide_from_left, slide_from_right, draw_on, pulse |
+| CONTINUE | Optional | yes |
 | CONTENT / LABEL | Yes | Yellow heading |
 | CONTENT / TEXT | Yes | `TEXT (card, black)` or `TEXT (white, on BG)` |
 | ICONS | Yes | 1–4 lines; optional `trigger:` per icon |

@@ -69,6 +69,42 @@ def _find_word(mob, word: str):
     return mob[start : start + len(compact_word)]
 
 
+def _emphasis_manim_color(em: dict):
+    """Resolve emphasis color (named or hex) to a Manim color."""
+    raw = em.get("color")
+    if not raw:
+        return None
+    from visual_library import _resolve_color
+
+    resolved = _resolve_color(str(raw))
+    if resolved is not None:
+        return resolved
+    if isinstance(raw, str) and raw.startswith("#"):
+        from manim import ManimColor
+
+        return ManimColor(raw)
+    return None
+
+
+def _apply_emphasis_on_line(scene, line_mob, em: dict) -> None:
+    """Apply word color + animation when *word* appears on *line_mob*."""
+    from manim import Indicate, Wiggle, YELLOW
+
+    word = em.get("word")
+    if not word or not _word_in_text(line_mob, word):
+        return
+    part = _find_word(line_mob, word)
+    tint = _emphasis_manim_color(em)
+    if tint is not None:
+        _apply_word_color(line_mob, word, tint)
+    anim = em.get("animation")
+    indicate_color = tint if tint is not None else YELLOW
+    if anim == "wiggle":
+        scene.play(Wiggle(part), run_time=0.6)
+    elif anim == "indicate":
+        scene.play(Indicate(part, color=indicate_color), run_time=0.55)
+
+
 def _apply_word_color(text_mob, word: str, color) -> None:
     """Color an emphasized word (uses submobject slice — visible unlike set_color_by_t2c)."""
     if not _word_in_text(text_mob, word):
@@ -199,6 +235,43 @@ def _cam_focus_icon(scene, label, icon_side: str, *, run_time: float = 0.9) -> N
         scene.cam_focus_right(label, run_time=run_time)
     else:
         scene.cam_focus_left(label, run_time=run_time)
+
+
+def _stage_icon_for_entrance(scene, mob, entrance: str) -> None:
+    """Keep icon off the scene until the entrance animation (hidden during camera pan)."""
+    if mob is None:
+        return
+    if mob in scene.mobjects:
+        scene.remove(mob)
+
+
+def _focus_icon_then_entrance(
+    scene,
+    beat: dict,
+    icon_panel,
+    *,
+    icon_side: str,
+    label,
+    card=None,
+    card_side: str = "right",
+    has_camera_spec: bool,
+    cam_on: bool,
+    beat_type: str,
+    entrance: str,
+    entrance_run_time: float = 0.45,
+) -> None:
+    """Pan/zoom to the icon panel first, then play the icon entrance animation."""
+    if icon_panel is None:
+        return
+    _stage_icon_for_entrance(scene, icon_panel, entrance)
+    if has_camera_spec:
+        _run_camera(scene, beat, "after_icon", label=label, card=card, card_side=card_side)
+    elif cam_on:
+        if beat_type == LIST and card is not None and isinstance(scene, MovingBeatScene):
+            scene.cam_focus_card(card, run_time=0.85)
+        else:
+            _cam_focus_icon(scene, label, icon_side)
+    scene.play_icon_entrance(icon_panel, entrance, run_time=entrance_run_time)
 
 
 def _beat_uses_camera(beat: dict, project_default: bool) -> bool:
@@ -376,18 +449,8 @@ def run_code_demo_beat(scene: BeatScene, beat: dict, *, use_camera: bool = False
         _run_camera(scene, beat, "after_output", label=label, card=card)
 
     for em in beat.get("emphasis") or []:
-        word = em.get("word")
-        if not word:
-            continue
         for line_mob in line_rows:
-            if _word_in_text(line_mob, word):
-                part = _find_word(line_mob, word)
-                if em.get("color") == "RED":
-                    _apply_word_color(line_mob, word, RED)
-                if em.get("animation") == "wiggle":
-                    scene.play(Wiggle(part), run_time=0.55)
-                elif em.get("animation") == "indicate":
-                    scene.play(Indicate(part, color=YELLOW), run_time=0.5)
+            _apply_emphasis_on_line(scene, line_mob, em)
 
     scene.wait(float(beat.get("hold", 1.5)))
 
@@ -396,7 +459,8 @@ def run_code_demo_beat(scene: BeatScene, beat: dict, *, use_camera: bool = False
     elif cam_on and isinstance(scene, MovingBeatScene):
         scene.cam_restore(run_time=0.7)
 
-    scene.sweep_foreground(run_time=0.55)
+    if not beat.get("continue_beat"):
+        scene.sweep_foreground(run_time=0.55)
 
 
 def run_compare_beat(scene: BeatScene, beat: dict, *, use_camera: bool = False) -> None:
@@ -440,7 +504,8 @@ def run_compare_beat(scene: BeatScene, beat: dict, *, use_camera: bool = False) 
     elif cam_on and isinstance(scene, MovingBeatScene):
         scene.cam_restore(run_time=0.7)
 
-    scene.sweep_foreground(run_time=0.55)
+    if not beat.get("continue_beat"):
+        scene.sweep_foreground(run_time=0.55)
 
 
 def run_panel_beat(scene: BeatScene, beat: dict, *, use_camera: bool = False) -> None:
@@ -530,15 +595,21 @@ def run_panel_beat(scene: BeatScene, beat: dict, *, use_camera: bool = False) ->
 
     primary_shown = False
     if batch_icon_reveal and bg_lines_mobs is not None:
-        scene.play(FadeIn(icon_panel), run_time=0.4)
+        entrance = beat.get("icon_entrance") or "fade_in"
+        _focus_icon_then_entrance(
+            scene,
+            beat,
+            icon_panel,
+            icon_side=icon_side,
+            label=label,
+            card=card,
+            card_side=card_side,
+            has_camera_spec=has_camera_spec,
+            cam_on=cam_on,
+            beat_type=beat_type,
+            entrance=entrance,
+        )
         primary_shown = True
-        if has_camera_spec:
-            _run_camera(scene, beat, "after_icon", label=label, card=card, card_side=card_side)
-        elif cam_on:
-            if beat_type == LIST and card is not None and isinstance(scene, MovingBeatScene):
-                scene.cam_focus_card(card, run_time=0.85)
-            else:
-                _cam_focus_icon(scene, label, icon_side)
         scene.wait(0.4)
 
     if card:
@@ -566,15 +637,7 @@ def run_panel_beat(scene: BeatScene, beat: dict, *, use_camera: bool = False) ->
                 scene.type_text(line, time_per_char=0.05)
             typed.append(line)
             for em in beat.get("emphasis") or []:
-                w = em.get("word")
-                if w and _word_in_text(line, w):
-                    part = _find_word(line, w)
-                    if em.get("color") == "RED":
-                        _apply_word_color(line, w, RED)
-                    if em.get("animation") == "wiggle":
-                        scene.play(Wiggle(part), run_time=0.6)
-                    elif em.get("animation") == "indicate":
-                        scene.play(Indicate(part, color=YELLOW), run_time=0.55)
+                _apply_emphasis_on_line(scene, line, em)
             hook = f"after_line_{i + 1}"
             if has_camera_spec:
                 _run_camera(scene, beat, hook, label=label, card=card, card_side=card_side)
@@ -604,23 +667,23 @@ def run_panel_beat(scene: BeatScene, beat: dict, *, use_camera: bool = False) ->
                 scene.cam_focus_right(label, run_time=0.9)
             if beat.get("emphasis"):
                 for em in beat["emphasis"]:
-                    w = em.get("word")
-                    if w and _word_in_text(line, w):
-                        if em.get("color") == "RED":
-                            _apply_word_color(line, w, RED)
-                        color = YELLOW if em.get("color") != "RED" else RED
-                        anim = Indicate(_find_word(line, w), color=color)
-                        scene.play(anim, run_time=0.55)
+                    _apply_emphasis_on_line(scene, line, em)
 
     if batch_icon_reveal and not primary_shown:
-        scene.play(FadeIn(icon_panel), run_time=0.4)
-        if has_camera_spec:
-            _run_camera(scene, beat, "after_icon", label=label, card=card, card_side=card_side)
-        elif cam_on:
-            if beat_type == LIST and card is not None and isinstance(scene, MovingBeatScene):
-                scene.cam_focus_card(card, run_time=0.85)
-            else:
-                _cam_focus_icon(scene, label, icon_side)
+        entrance = beat.get("icon_entrance") or "fade_in"
+        _focus_icon_then_entrance(
+            scene,
+            beat,
+            icon_panel,
+            icon_side=icon_side,
+            label=label,
+            card=card,
+            card_side=card_side,
+            has_camera_spec=has_camera_spec,
+            cam_on=cam_on,
+            beat_type=beat_type,
+            entrance=entrance,
+        )
     elif use_word_sync and has_icon_triggers:
         still_hidden = [
             m
@@ -628,9 +691,7 @@ def run_panel_beat(scene: BeatScene, beat: dict, *, use_camera: bool = False) ->
             if (m.get_opacity() if m.get_opacity() is not None else 1.0) < 0.5
         ]
         if still_hidden:
-            for mob in still_hidden:
-                mob.set_opacity(1)
-            scene.play(*[FadeIn(m, scale=1.02) for m in still_hidden], run_time=0.4)
+            scene.play(*[FadeIn(mob) for mob in still_hidden], run_time=0.4)
         if has_camera_spec:
             _run_camera(scene, beat, "after_icon", label=label, card=card, card_side=card_side)
         elif cam_on and len(stack_specs) >= 3 and isinstance(scene, MovingBeatScene):
@@ -654,15 +715,17 @@ def run_panel_beat(scene: BeatScene, beat: dict, *, use_camera: bool = False) ->
             word = em.get("word")
             if word and _word_in_text(punchline_mob, word):
                 part = _find_word(punchline_mob, word)
-                if em.get("color") == "RED":
-                    _apply_word_color(punchline_mob, word, RED)
+                tint = _emphasis_manim_color(em)
+                if tint is not None:
+                    _apply_word_color(punchline_mob, word, tint)
                 if em.get("animation") == "wiggle":
                     extras = [Wiggle(part)]
                     if swap_mob:
                         extras.append(Wiggle(swap_mob))
                     scene.play(*extras, run_time=0.6)
                 elif em.get("animation") == "indicate":
-                    scene.play(Indicate(part, color=YELLOW), run_time=0.55)
+                    indicate_color = tint if tint is not None else YELLOW
+                    scene.play(Indicate(part, color=indicate_color), run_time=0.55)
     elif punchline_mob:
         scene.type_text(punchline_mob, time_per_char=0.05)
 
@@ -674,7 +737,8 @@ def run_panel_beat(scene: BeatScene, beat: dict, *, use_camera: bool = False) ->
         scene.cam_restore(run_time=0.7)
 
     # One unified fade: card, card text, icons, and detached emphasis slices together.
-    scene.sweep_foreground(run_time=0.55)
+    if not beat.get("continue_beat"):
+        scene.sweep_foreground(run_time=0.55)
 
 
 def run_beat_from_spec(scene: BeatScene, beat: dict, *, use_camera: bool = False) -> None:

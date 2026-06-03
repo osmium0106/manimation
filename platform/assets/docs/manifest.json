@@ -1,0 +1,135 @@
+{
+  "title": "Manimations Studio",
+  "subtitle": "Documentation",
+  "author": "Divyanshu Singh",
+  "version": "0.1",
+  "sections": [
+    {
+      "title": "Getting started",
+      "pages": [
+        {
+          "slug": "introduction",
+          "title": "Introduction",
+          "description": "What Manimations Studio is and how it works",
+          "file": "introduction.md"
+        },
+        {
+          "slug": "quick-start",
+          "title": "Quick start",
+          "description": "Setup, storage, and the two-phase render flow",
+          "file": "quick-start.md"
+        },
+        {
+          "slug": "studio-ui",
+          "title": "Studio UI",
+          "description": "Projects hub, tabs, preview, and export",
+          "file": "studio-ui.md"
+        }
+      ]
+    },
+    {
+      "title": "Authoring beats",
+      "pages": [
+        {
+          "slug": "beat-types",
+          "title": "Beat types",
+          "description": "statement, question, joke, code_demo, and more",
+          "file": "beat-types.md"
+        },
+        {
+          "slug": "layouts",
+          "title": "Layouts",
+          "description": "Card and text panel presets",
+          "file": "layouts.md"
+        },
+        {
+          "slug": "beat-script",
+          "title": "Beat script format",
+          "description": "Script sections, checklist, and template",
+          "file": "beat-script.md"
+        },
+        {
+          "slug": "code-demo",
+          "title": "Code demo beats",
+          "description": "Full-width code editor + output panel",
+          "file": "code-demo.md"
+        }
+      ]
+    },
+    {
+      "title": "Icons & visuals",
+      "pages": [
+        {
+          "slug": "icons",
+          "title": "Icons",
+          "description": "ICONS section, colors, triggers, catalog",
+          "file": "icons.md"
+        },
+        {
+          "slug": "icon-grid",
+          "title": "Icon grid",
+          "description": "Multi-icon panel layouts (2–4 icons)",
+          "file": "icon-grid.md"
+        },
+        {
+          "slug": "icon-reveal",
+          "title": "Icon reveal",
+          "description": "Word-sync and batch reveal modes",
+          "file": "icon-reveal.md"
+        },
+        {
+          "slug": "icon-entrances",
+          "title": "Icon entrances",
+          "description": "fade_in, pop_in, slide, draw_on, pulse",
+          "file": "icon-entrances.md"
+        }
+      ]
+    },
+    {
+      "title": "Motion & layout",
+      "pages": [
+        {
+          "slug": "cards-emphasis",
+          "title": "Cards & emphasis",
+          "description": "Card sizes, text variants, highlight words",
+          "file": "cards-emphasis.md"
+        },
+        {
+          "slug": "camera",
+          "title": "Camera",
+          "description": "Moving camera hooks and restore rules",
+          "file": "camera.md"
+        },
+        {
+          "slug": "continue-beat",
+          "title": "Continue beat",
+          "description": "Skip black transition between beats",
+          "file": "continue-beat.md"
+        },
+        {
+          "slug": "animations",
+          "title": "Animation IDs",
+          "description": "Timeline animation reference",
+          "file": "animations.md"
+        }
+      ]
+    },
+    {
+      "title": "Configuration",
+      "pages": [
+        {
+          "slug": "themes",
+          "title": "Themes",
+          "description": "Backgrounds, typography, style packs",
+          "file": "themes.md"
+        },
+        {
+          "slug": "api-reference",
+          "title": "API reference",
+          "description": "REST endpoints for Studio",
+          "file": "api-reference.md"
+        }
+      ]
+    }
+  ]
+}
